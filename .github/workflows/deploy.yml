@@ -41,14 +41,14 @@ jobs:
           tar -czf smileyan-frontend-${{ github.ref_name }}.tar.gz -C dist .
 
       - name: Copy tarball to server
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v0.1.10
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "smileyan-frontend-${{ github.ref_name }}.tar.gz"
-          target: "/tmp/smileyan-frontend.tar.gz"
+          target: "/tmp/"
           strip_components: 0
 
       - name: Run deploy script on server
@@ -64,12 +64,20 @@ jobs:
           script: |
             set -euo pipefail
             DEPLOY_DIR=/var/www/html
-            PKG=/tmp/smileyan-frontend.tar.gz
+            # 支持两种文件名：旧版固定名 / 新版带 tag 名
+            PKG=""
+            for candidate in "/tmp/smileyan-frontend-${RELEASE_TAG}.tar.gz" "/tmp/smileyan-frontend.tar.gz"; do
+              if [ -f "$candidate" ]; then PKG="$candidate"; break; fi
+            done
+            if [ -z "$PKG" ]; then
+              echo "missing tarball under /tmp/; ls -la /tmp/:"
+              ls -la /tmp/
+              exit 1
+            fi
+            echo "using package: $PKG"
             TAG="${RELEASE_TAG:-unknown}"
             TS=$(date +%Y%m%d-%H%M%S)
             BACKUP_DIR=/var/www/.backups/smileyan-frontend
-
-            test -f "$PKG" || { echo "missing $PKG"; exit 1; }
 
             sudo mkdir -p "$BACKUP_DIR"
             if [ -d "$DEPLOY_DIR" ] && [ -n "$(sudo ls -A "$DEPLOY_DIR" 2>/dev/null || true)" ]; then
