@@ -1,0 +1,91 @@
+name: build-and-deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        run: npm run build:prod
+
+      - name: Upload dist artifact (debug only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.ref_name }}
+          path: dist
+          retention-days: 7
+
+      - name: Pack dist into tarball
+        run: |
+          tar -czf smileyan-frontend-${{ github.ref_name }}.tar.gz -C dist .
+
+      - name: Copy tarball to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "smileyan-frontend-${{ github.ref_name }}.tar.gz"
+          target: "/tmp/smileyan-frontend.tar.gz"
+          strip_components: 0
+
+      - name: Run deploy script on server
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            DEPLOY_DIR=/var/www/html
+            PKG=/tmp/smileyan-frontend.tar.gz
+            TAG="${RELEASE_TAG:-unknown}"
+            TS=$(date +%Y%m%d-%H%M%S)
+            BACKUP_DIR=/var/www/.backups/smileyan-frontend
+
+            test -f "$PKG" || { echo "missing $PKG"; exit 1; }
+
+            sudo mkdir -p "$BACKUP_DIR"
+            if [ -d "$DEPLOY_DIR" ] && [ -n "$(sudo ls -A "$DEPLOY_DIR" 2>/dev/null || true)" ]; then
+              sudo tar -czf "$BACKUP_DIR/${TS}-${TAG}.tar.gz" -C "$DEPLOY_DIR" .
+              # keep only the most recent 3 backups
+              sudo ls -1tr "$BACKUP_DIR" | head -n -3 | xargs -r sudo rm -rf --
+            fi
+
+            sudo mkdir -p "$DEPLOY_DIR"
+            sudo find "$DEPLOY_DIR" -mindepth 1 -delete
+            sudo tar -xzf "$PKG" -C "$DEPLOY_DIR"
+            sudo rm -f "$PKG"
+
+            if command -v curl >/dev/null 2>&1; then
+              sleep 1
+              curl -fsS -o /dev/null "http://127.0.0.1/" || echo "WARN: local health check failed"
+            fi
+
+            echo "deploy ok: tag=$TAG at $TS"
