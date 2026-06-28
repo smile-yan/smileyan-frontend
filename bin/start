@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.."
+
+echo "启动 Smileyan Frontend..."
+nohup npm run dev > ./logs/frontend.log 2>&1 &
+echo "前端已启动，PID: $!"
+echo "日志文件: $(pwd)/logs/frontend.log"

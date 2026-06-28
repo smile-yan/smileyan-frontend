@@ -1,0 +1,15 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.."
+
+echo "停止 Smileyan Frontend..."
+
+# 查找并杀死 node 进程（vite dev server）
+PID=$(lsof -i :5173 | grep LISTEN | awk '{print $2}' | head -1)
+
+if [ -n "$PID" ]; then
+    kill $PID
+    echo "前端已停止，PID: $PID"
+else
+    echo "前端未运行"
+fi

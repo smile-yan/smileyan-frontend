@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.."
+
+# 停止
+./bin/stop
+
+# 等待一下
+sleep 1
+
+# 启动
+./bin/start
