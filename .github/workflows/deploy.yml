@@ -41,7 +41,7 @@ jobs:
           tar -czf smileyan-frontend-${{ github.ref_name }}.tar.gz -C dist .
 
       - name: Copy tarball to server
-        uses: appleboy/scp-action@v0.1.10
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -52,7 +52,7 @@ jobs:
           strip_components: 0
 
       - name: Run deploy script on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         with:
