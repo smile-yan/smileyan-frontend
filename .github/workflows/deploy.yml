@@ -61,8 +61,10 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 5m
+          envs: RELEASE_TAG
           script: |
             set -eo pipefail
+            export RELEASE_TAG="$RELEASE_TAG"
             DEPLOY_DIR=/var/www/html
             # 支持两种文件名：旧版固定名 / 新版带 tag 名
             PKG=""
