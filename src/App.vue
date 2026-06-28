@@ -4,7 +4,10 @@
       <el-header>
         <div class="header-content">
           <div class="logo">
-            <router-link to="/">Smileyan</router-link>
+            <router-link to="/">
+              <img src="/smileyan-logo.svg" alt="Smileyan" class="logo-img" />
+              <span class="logo-text">Smileyan</span>
+            </router-link>
           </div>
           <el-menu mode="horizontal" :default-active="activeMenu" router>
             <el-menu-item index="/">首页</el-menu-item>
@@ -271,8 +274,21 @@ body {
 }
 
 .logo a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: #409eff;
   text-decoration: none;
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+.logo-text {
+  line-height: 1;
 }
 
 .header-content .el-menu {
