@@ -62,7 +62,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 5m
           script: |
-            set -euo pipefail
+            set -eo pipefail
             DEPLOY_DIR=/var/www/html
             # 支持两种文件名：旧版固定名 / 新版带 tag 名
             PKG=""
