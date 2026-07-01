@@ -36,7 +36,9 @@ jobs:
         run: npm run build:prod
 
       - name: Upload dist artifact (debug only)
-        uses: actions/upload-artifact@v5
+        # 升级到 v7：v5 仍以 Node 20 为目标，v6.0+ 才完成 runtime 迁移到 Node 24
+        # 见 https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+        uses: actions/upload-artifact@v7
         with:
           name: dist-${{ github.ref_name }}
           path: dist
