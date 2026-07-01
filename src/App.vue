@@ -5,8 +5,8 @@
         <div class="header-content">
           <div class="logo">
             <router-link to="/">
-              <img src="/smileyan-logo.svg" alt="Smileyan" class="logo-img" />
-              <span class="logo-text">Smileyan</span>
+              <img src="/smileyan-logo.svg" alt="大大猪" class="logo-img" />
+              <span class="logo-text">大大猪</span>
             </router-link>
           </div>
           <el-menu mode="horizontal" :default-active="activeMenu" router>
@@ -43,7 +43,15 @@
       </el-main>
       <el-footer>
         <div class="footer-content">
-          <p>&copy; 2024 Smileyan. All rights reserved.</p>
+          <p>&copy; 2024 大大猪. All rights reserved.</p>
+          <p class="beian">
+            <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener noreferrer">
+              <svg class="beian-icon" viewBox="0 0 1024 1024" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M512 64 128 192v256c0 213 145 397 384 464 239-67 384-251 384-464V192L512 64zm0 96 288 96v192c0 168-112 316-288 372-176-56-288-204-288-372V256l288-96zm0 144a112 112 0 100 224 112 112 0 000-224zm0 256c-112 0-176 56-176 128v32h352v-32c0-72-64-128-176-128z"/>
+              </svg>
+              <span>湘ICP备17012851号-5</span>
+            </a>
+          </p>
         </div>
       </el-footer>
     </el-container>
@@ -326,12 +334,34 @@ body {
   background: #f5f5f5;
   padding: 20px;
   text-align: center;
+  height: auto;
 }
 
 .footer-content {
   max-width: 1200px;
   margin: 0 auto;
   color: #666;
+}
+
+.footer-content .beian {
+  margin-top: 8px;
+}
+
+.footer-content .beian a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.footer-content .beian a:hover {
+  color: #409eff;
+}
+
+.footer-content .beian-icon {
+  vertical-align: middle;
 }
 
 .code-input {
