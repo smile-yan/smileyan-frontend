@@ -27,6 +27,12 @@ jobs:
         run: npm ci --legacy-peer-deps --registry=https://registry.npmmirror.com
 
       - name: Build for production
+        # VITE_API_BASE_URL 留空时，dist 中的请求走相对路径 /api，
+        # 由服务器侧 Nginx/Caddy 反向代理转发（推荐）。
+        # 如需让 dist 直连某个绝对地址，在仓库 Settings -> Secrets and variables ->
+        # Actions -> Variables 中配置 PROD_API_BASE_URL（敏感地址用 Secrets 注入）。
+        env:
+          VITE_API_BASE_URL: ${{ vars.PROD_API_BASE_URL || secrets.PROD_API_BASE_URL || '' }}
         run: npm run build:prod
 
       - name: Upload dist artifact (debug only)
