@@ -71,46 +71,10 @@ function initImageViewer() {
     viewer = null
   }
 
-  // 直接在页面内容容器上初始化 viewerjs
-  const pageContent = document.querySelector('.page-content')
-  if (pageContent) {
-    try {
-      viewer = new Viewer(pageContent, {
-        toolbar: {
-          zoomIn: true,
-          zoomOut: true,
-          oneToOne: true,
-          reset: true,
-          prev: true,
-          play: true,
-          next: true,
-          rotateLeft: true,
-          rotateRight: true,
-          flipHorizontal: false,
-          flipVertical: false
-        },
-        title: function(image) {
-          return image.alt || ''
-        },
-        transition: true,
-        fullscreen: true,
-        keyboard: true,
-        loop: true,
-        minZoomRatio: 0.1,
-        maxZoomRatio: 10,
-        moveable: true,
-        zoomable: true,
-        scalable: true,
-        rotatable: true
-      })
-      console.log('Viewer initialized successfully')
-    } catch (e) {
-      console.error('Error initializing viewer:', e)
-    }
-  }
+  // 为每个图片添加点击事件
+  images.forEach((img, index) => {
+    console.log('Setting up page image', index, img.src)
 
-  // 为每个图片添加样式
-  images.forEach((img) => {
     img.style.cursor = 'zoom-in'
     img.style.transition = 'transform 0.2s, box-shadow 0.2s'
 
@@ -124,9 +88,132 @@ function initImageViewer() {
       img.style.transform = 'scale(1)'
       img.style.boxShadow = 'none'
     })
+
+    // 点击事件
+    img.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      console.log('Page image clicked:', img.src)
+      openImageViewer(Array.from(images), index)
+    })
   })
 
   console.log('Page image viewer initialization complete')
+}
+
+// 打开图片查看器
+function openImageViewer(images, index) {
+  console.log('Opening image viewer with index:', index)
+
+  // 销毁之前的查看器
+  if (viewer) {
+    try {
+      viewer.destroy()
+      console.log('Previous viewer destroyed')
+    } catch (e) {
+      console.log('Error destroying viewer:', e)
+    }
+    viewer = null
+  }
+
+  // 清理之前的临时容器
+  const oldContainer = document.getElementById('viewer-temp-container')
+  if (oldContainer) {
+    oldContainer.remove()
+  }
+
+  // 创建临时容器
+  const tempDiv = document.createElement('div')
+  tempDiv.id = 'viewer-temp-container'
+  tempDiv.style.position = 'fixed'
+  tempDiv.style.zIndex = '-9999'
+  tempDiv.style.opacity = '0'
+  tempDiv.style.pointerEvents = 'none'
+  document.body.appendChild(tempDiv)
+
+  // 添加所有图片
+  images.forEach((img, i) => {
+    const tempImg = document.createElement('img')
+    tempImg.src = img.src
+    tempImg.alt = img.alt || ''
+    tempImg.style.maxWidth = '100%'
+    tempImg.style.height = 'auto'
+    tempImg.style.display = 'block'
+    tempDiv.appendChild(tempImg)
+    console.log('Added image to container:', i, tempImg.src)
+  })
+
+  console.log('Created temp container with', tempDiv.children.length, 'images')
+
+  // 初始化查看器
+  try {
+    viewer = new Viewer(tempDiv, {
+      initialViewIndex: index,
+      toolbar: {
+        zoomIn: true,
+        zoomOut: true,
+        oneToOne: true,
+        reset: true,
+        prev: true,
+        play: true,
+        next: true,
+        rotateLeft: true,
+        rotateRight: true,
+        flipHorizontal: false,
+        flipVertical: false
+      },
+      title: function(image) {
+        return image.alt || ''
+      },
+      transition: true,
+      fullscreen: true,
+      keyboard: true,
+      loop: true,
+      minZoomRatio: 0.1,
+      maxZoomRatio: 10,
+      moveable: true,
+      zoomable: true,
+      scalable: true,
+      rotatable: true,
+      // 图片加载完成后自动适应屏幕
+      viewed: function() {
+        console.log('Image viewed, adjusting size')
+        // 自动适应屏幕大小
+        if (viewer) {
+          viewer.zoomTo(1)
+        }
+) },
+      // 关闭时的清理
+      hidden: function() {
+        console.log('Viewer hidden, cleaning up')
+        try {
+          if (viewer) {
+            viewer.destroy()
+            viewer = null
+          }
+          if (tempDiv && tempDiv.parentNode) {
+            tempDiv.parentNode.removeChild(tempDiv)
+          }
+        } catch (e) {
+          console.log('Cleanup error:', e)
+        }
+      }
+    })
+
+    console.log('Viewer created, showing...')
+    // 显示查看器
+    setTimeout(() => {
+      viewer.show()
+    }, 100)
+
+  } catch (e) {
+    console.error('Error creating viewer:', e)
+    // 清理临时容器
+    if (tempDiv && tempDiv.parentNode) {
+      tempDiv.parentNode.removeChild(tempDiv)
+    }
+  }
 }
 </script>
 
