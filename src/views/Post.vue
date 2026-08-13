@@ -39,7 +39,7 @@
               <el-tag v-for="tag in post.tags" :key="tag.id" size="small">{{ tag.name }}</el-tag>
             </div>
           </header>
-          <div class="article-content" v-html="post.html_content"></div>
+          <div class="article-content" v-html="post.html_content" ref="articleContent"></div>
         </article>
 
         <!-- 右侧导航 -->
@@ -113,6 +113,8 @@ import { useUserStore } from '../store/user'
 import { Edit } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
+import Viewer from 'viewerjs'
+import 'viewerjs/dist/viewer.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -124,18 +126,94 @@ const loading = ref(true)
 const newComment = ref('')
 const replyTo = ref(null)
 const articleRef = ref(null)
+const articleContent = ref(null)
 const toc = ref([])
 const activeId = ref('')
 const tocLeft = ref(0)
 const isSpeaking = ref(false)
 let speechSynthesis = null
 let utterance = null
+let viewer = null
 
 // TTS 朗读功能
 function initSpeech() {
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     speechSynthesis = window.speechSynthesis
   }
+}
+
+// 图片查看器功能
+function initImageViewer() {
+  // 获取文章内容中的所有图片
+  const images = document.querySelectorAll('.article-content img')
+
+  // 为每个图片添加点击事件
+  images.forEach((img, index) => {
+    img.style.cursor = 'pointer'
+    img.style.transition = 'transform 0.2s, box-shadow 0.2s'
+    img.addEventListener('mouseenter', () => {
+      img.style.transform = 'scale(1.02)'
+      img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+    })
+    img.addEventListener('mouseleave', () => {
+      img.style.transform = 'scale(1)'
+      img.style.boxShadow = 'none'
+    })
+    img.addEventListener('click', (e) => {
+      e.preventDefault()
+      // 创建新的查看器实例
+      const allImages = Array.from(document.querySelectorAll('.article-content img'))
+      const currentIndex = allImages.indexOf(img)
+
+      // 创建一个临时容器来显示图片
+      const tempContainer = document.createElement('div')
+      tempContainer.style.display = 'none'
+
+      allImages.forEach(img => {
+        const tempImg = document.createElement('img')
+        tempImg.src = img.src
+        tempImg.alt = img.alt
+        tempContainer.appendChild(tempImg)
+      })
+
+      document.body.appendChild(tempContainer)
+
+      // 初始化查看器
+      viewer = new Viewer(tempContainer, {
+        initialViewIndex: currentIndex,
+        toolbar: {
+          zoomIn: true,
+          zoomOut: true,
+          oneToOne: true,
+          reset: true,
+          prev: true,
+          next: true,
+          rotateLeft: true,
+          rotateRight: true,
+          flipHorizontal: true,
+          flipVertical: false,
+        },
+        keyboard: true,
+        loop: true,
+        title: function (image) {
+          return image.alt || (image.src.match(/[^\/]+$/) || [])[0] || ''
+        },
+      })
+
+      // 立即显示查看器
+      viewer.show()
+
+      // 清理临时容器
+      viewer.hide = function() {
+        const result = Viewer.prototype.hide.call(this)
+        if (tempContainer && tempContainer.parentNode) {
+          tempContainer.parentNode.removeChild(tempContainer)
+        }
+        viewer = null
+        return result
+      }
+    })
+  })
 }
 
 function stripMarkdown(text) {
@@ -225,6 +303,7 @@ onMounted(async () => {
   window.addEventListener('resize', updateTocPosition)
   nextTick(() => {
     updateTocPosition()
+    initImageViewer()
   })
 })
 
@@ -233,6 +312,9 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateTocPosition)
   if (speechSynthesis) {
     speechSynthesis.cancel()
+  }
+  if (viewer) {
+    viewer.destroy()
   }
 })
 
@@ -302,6 +384,8 @@ async function loadPost() {
       }
       // 构建目录
       buildToc()
+      // 初始化图片查看器
+      initImageViewer()
     }, 200)
   } catch (e) {
     console.error('Failed to load post', e)
@@ -484,6 +568,14 @@ function editPost() {
   max-width: 100%;
   width: 100%;
   height: auto;
+  cursor: zoom-in;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 4px;
+}
+
+:deep(.article-content img:hover) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* blockquote 样式 */
@@ -750,6 +842,14 @@ function editPost() {
   :deep(.article-content img) {
     max-width: 100% !important;
     height: auto !important;
+    cursor: zoom-in;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 4px;
+  }
+
+  :deep(.article-content img:hover) {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   :deep(.article-h1) {

@@ -14,25 +14,122 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '@/utils/axios'
+import Viewer from 'viewerjs'
+import 'viewerjs/dist/viewer.css'
 
 const route = useRoute()
 
 const page = ref(null)
 const loading = ref(true)
+let viewer = null
 
 onMounted(async () => {
   try {
     const res = await axios.get(`/api/pages/${route.params.slug}`)
     page.value = res.data
+    // 等待 DOM 更新后初始化图片查看器
+    await nextTick()
+    setTimeout(() => {
+      initImageViewer()
+    }, 100)
   } catch (e) {
     console.error('Failed to load page', e)
   } finally {
     loading.value = false
   }
 })
+
+onUnmounted(() => {
+  if (viewer) {
+    viewer.destroy()
+  }
+})
+
+// 初始化图片查看器
+function initImageViewer() {
+  const images = document.querySelectorAll('.page-content img')
+  if (images.length === 0) return
+
+  images.forEach((img, index) => {
+    img.style.cursor = 'pointer'
+    img.style.transition = 'transform 0.2s, box-shadow 0.2s'
+    img.addEventListener('mouseenter', () => {
+      img.style.transform = 'scale(1.02)'
+      img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+    })
+    img.addEventListener('mouseleave', () => {
+      img.style.transform = 'scale(1)'
+      img.style.boxShadow = 'none'
+    })
+    img.addEventListener('click', (e) => {
+      e.preventDefault()
+      const allImages = Array.from(document.querySelectorAll('.page-content img'))
+      const currentIndex = allImages.indexOf(img)
+      openImageViewer(allImages, currentIndex)
+    })
+  })
+}
+
+// 打开图片查看器
+function openImageViewer(images, index) {
+  // 创建临时容器
+  const tempDiv = document.createElement('div')
+  tempDiv.style.display = 'none'
+  document.body.appendChild(tempDiv)
+
+  // 添加所有图片
+  images.forEach(img => {
+    const tempImg = document.createElement('img')
+    tempImg.src = img.src
+    tempImg.alt = img.alt || ''
+    tempDiv.appendChild(tempImg)
+  })
+
+  // 创建查看器
+  if (viewer) {
+    viewer.destroy()
+  }
+
+  viewer = new Viewer(tempDiv, {
+    url: 'src',
+    initialViewIndex: index,
+    toolbar: {
+      zoomIn: true,
+      zoomOut: true,
+      oneToOne: true,
+      reset: true,
+      prev: true,
+      play: true,
+      next: true,
+      rotateLeft: true,
+      rotateRight: true,
+      flipHorizontal: false,
+      flipVertical: false
+    },
+    title: function(image) {
+      return image.alt || ''
+    },
+    transition: true,
+    fullscreen: true,
+    keyboard: true
+  })
+
+  viewer.show()
+
+  // 清理临时容器
+  const originalHide = viewer.hide
+  viewer.hide = function() {
+    const result = originalHide.call(this)
+    if (tempDiv && tempDiv.parentNode) {
+      tempDiv.parentNode.removeChild(tempDiv)
+    }
+    viewer = null
+    return result
+  }
+}
 </script>
 
 <style scoped>
@@ -49,6 +146,21 @@ onMounted(async () => {
 .page-content {
   line-height: 1.8;
   font-size: 16px;
+}
+
+/* 页面内容中的图片样式 */
+:deep(.page-content img) {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  cursor: zoom-in;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 4px;
+}
+
+:deep(.page-content img:hover) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 :deep(.page-content > p > code),
@@ -101,6 +213,14 @@ onMounted(async () => {
 
 :deep(.article-image) {
   max-width: 100%;
+  cursor: zoom-in;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 4px;
+}
+
+:deep(.article-image:hover) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 表格样式 - Typora 风格 */
