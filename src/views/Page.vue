@@ -27,7 +27,7 @@ const pageContent = ref(null)
 
 onMounted(async () => {
   try {
-    const res = await axios.get(`/api/pages/pages/${route.params.slug}`)
+    const res = await axios.get(`/api/pages/${route.params.slug}`)
     page.value = res.data
     // 等待 DOM 更新后初始化图片查看器
     await nextTick()
