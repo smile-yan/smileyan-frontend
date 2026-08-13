@@ -53,8 +53,46 @@ function initImageViewer() {
   const images = document.querySelectorAll('.page-content img')
   if (images.length === 0) return
 
-  images.forEach((img, index) => {
-    img.style.cursor = 'pointer'
+  // 销毁之前的查看器
+  if (viewer) {
+    try {
+      viewer.destroy()
+    } catch (e) {
+      console.log('Previous viewer destroyed')
+    }
+    viewer = null
+  }
+
+  // 直接在图片容器上初始化 viewerjs
+  const imageContainer = document.querySelector('.page-content')
+  if (imageContainer) {
+    viewer = new Viewer(imageContainer, {
+      toolbar: {
+        zoomIn: true,
+        zoomOut: true,
+        oneToOne: true,
+        reset: true,
+        prev: true,
+        play: true,
+        next: true,
+        rotateLeft: true,
+        rotateRight: true,
+        flipHorizontal: false,
+        flipVertical: false
+      },
+      title: function(image) {
+        return image.alt || ''
+      },
+      transition: true,
+      fullscreen: true,
+      keyboard: true,
+      loop: true
+    })
+  }
+
+  // 为每个图片添加样式
+  images.forEach((img) => {
+    img.style.cursor = 'zoom-in'
     img.style.transition = 'transform 0.2s, box-shadow 0.2s'
     img.addEventListener('mouseenter', () => {
       img.style.transform = 'scale(1.02)'
@@ -64,71 +102,7 @@ function initImageViewer() {
       img.style.transform = 'scale(1)'
       img.style.boxShadow = 'none'
     })
-    img.addEventListener('click', (e) => {
-      e.preventDefault()
-      const allImages = Array.from(document.querySelectorAll('.page-content img'))
-      const currentIndex = allImages.indexOf(img)
-      openImageViewer(allImages, currentIndex)
-    })
   })
-}
-
-// 打开图片查看器
-function openImageViewer(images, index) {
-  // 创建临时容器
-  const tempDiv = document.createElement('div')
-  tempDiv.style.display = 'none'
-  document.body.appendChild(tempDiv)
-
-  // 添加所有图片
-  images.forEach(img => {
-    const tempImg = document.createElement('img')
-    tempImg.src = img.src
-    tempImg.alt = img.alt || ''
-    tempDiv.appendChild(tempImg)
-  })
-
-  // 创建查看器
-  if (viewer) {
-    viewer.destroy()
-  }
-
-  viewer = new Viewer(tempDiv, {
-    url: 'src',
-    initialViewIndex: index,
-    toolbar: {
-      zoomIn: true,
-      zoomOut: true,
-      oneToOne: true,
-      reset: true,
-      prev: true,
-      play: true,
-      next: true,
-      rotateLeft: true,
-      rotateRight: true,
-      flipHorizontal: false,
-      flipVertical: false
-    },
-    title: function(image) {
-      return image.alt || ''
-    },
-    transition: true,
-    fullscreen: true,
-    keyboard: true
-  })
-
-  viewer.show()
-
-  // 清理临时容器
-  const originalHide = viewer.hide
-  viewer.hide = function() {
-    const result = originalHide.call(this)
-    if (tempDiv && tempDiv.parentNode) {
-      tempDiv.parentNode.removeChild(tempDiv)
-    }
-    viewer = null
-    return result
-  }
 }
 </script>
 

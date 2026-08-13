@@ -147,9 +147,48 @@ function initImageViewer() {
   // 获取文章内容中的所有图片
   const images = document.querySelectorAll('.article-content img')
 
-  // 为每个图片添加点击事件
-  images.forEach((img, index) => {
-    img.style.cursor = 'pointer'
+  if (images.length === 0) return
+
+  // 销毁之前的查看器
+  if (viewer) {
+    try {
+      viewer.destroy()
+    } catch (e) {
+      console.log('Previous viewer destroyed')
+    }
+    viewer = null
+  }
+
+  // 直接在图片容器上初始化 viewerjs
+  const imageContainer = document.querySelector('.article-content')
+  if (imageContainer) {
+    viewer = new Viewer(imageContainer, {
+      toolbar: {
+        zoomIn: true,
+        zoomOut: true,
+        oneToOne: true,
+        reset: true,
+        prev: true,
+        play: true,
+        next: true,
+        rotateLeft: true,
+        rotateRight: true,
+        flipHorizontal: false,
+        flipVertical: false
+      },
+      title: function(image) {
+        return image.alt || ''
+      },
+      transition: true,
+      fullscreen: true,
+      keyboard: true,
+      loop: true
+    })
+  }
+
+  // 为每个图片添加样式
+  images.forEach((img) => {
+    img.style.cursor = 'zoom-in'
     img.style.transition = 'transform 0.2s, box-shadow 0.2s'
     img.addEventListener('mouseenter', () => {
       img.style.transform = 'scale(1.02)'
@@ -158,60 +197,6 @@ function initImageViewer() {
     img.addEventListener('mouseleave', () => {
       img.style.transform = 'scale(1)'
       img.style.boxShadow = 'none'
-    })
-    img.addEventListener('click', (e) => {
-      e.preventDefault()
-      // 创建新的查看器实例
-      const allImages = Array.from(document.querySelectorAll('.article-content img'))
-      const currentIndex = allImages.indexOf(img)
-
-      // 创建一个临时容器来显示图片
-      const tempContainer = document.createElement('div')
-      tempContainer.style.display = 'none'
-
-      allImages.forEach(img => {
-        const tempImg = document.createElement('img')
-        tempImg.src = img.src
-        tempImg.alt = img.alt
-        tempContainer.appendChild(tempImg)
-      })
-
-      document.body.appendChild(tempContainer)
-
-      // 初始化查看器
-      viewer = new Viewer(tempContainer, {
-        initialViewIndex: currentIndex,
-        toolbar: {
-          zoomIn: true,
-          zoomOut: true,
-          oneToOne: true,
-          reset: true,
-          prev: true,
-          next: true,
-          rotateLeft: true,
-          rotateRight: true,
-          flipHorizontal: true,
-          flipVertical: false,
-        },
-        keyboard: true,
-        loop: true,
-        title: function (image) {
-          return image.alt || (image.src.match(/[^\/]+$/) || [])[0] || ''
-        },
-      })
-
-      // 立即显示查看器
-      viewer.show()
-
-      // 清理临时容器
-      viewer.hide = function() {
-        const result = Viewer.prototype.hide.call(this)
-        if (tempContainer && tempContainer.parentNode) {
-          tempContainer.parentNode.removeChild(tempContainer)
-        }
-        viewer = null
-        return result
-      }
     })
   })
 }
