@@ -109,9 +109,13 @@ function openViewer(startIndex) {
   image.src = activeImages[currentImageIndex].src
   image.alt = activeImages[currentImageIndex].alt || ''
   image.className = 'viewer-image'
+
+  // 设置默认图片宽度为屏幕的2/3，高度自适应
+  const defaultWidth = (window.innerWidth * 2) / 3
+
   image.style.cssText = `
-    max-width: 90vw;
-    max-height: 90vh;
+    width: ${defaultWidth}px;
+    height: auto;
     object-fit: contain;
     cursor: grab;
     transition: transform 0.2s ease;
