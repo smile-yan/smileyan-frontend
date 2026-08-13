@@ -216,12 +216,100 @@ const typoraState = reactive({
   activeIdx: -1
 })
 
+function getSvgTagEvents(line, ignoredContent = null) {
+  const events = []
+  let cursor = 0
+
+  while (cursor < line.length) {
+    if (ignoredContent) {
+      const endMark = ignoredContent === 'comment' ? '-->' : ']]>'
+      const end = line.indexOf(endMark, cursor)
+      if (end === -1) return { events, ignoredContent }
+      cursor = end + endMark.length
+      ignoredContent = null
+      continue
+    }
+
+    const start = line.indexOf('<', cursor)
+    if (start === -1) break
+
+    // SVG 注释和 CDATA 中的标签文本不应影响分块状态
+    if (line.startsWith('<!--', start)) {
+      const end = line.indexOf('-->', start + 4)
+      if (end === -1) return { events, ignoredContent: 'comment' }
+      cursor = end + 3
+      continue
+    }
+    if (line.startsWith('<![CDATA[', start)) {
+      const end = line.indexOf(']]>', start + 9)
+      if (end === -1) return { events, ignoredContent: 'cdata' }
+      cursor = end + 3
+      continue
+    }
+
+    let i = start + 1
+    while (/\s/.test(line[i] || '')) i++
+
+    let isClosing = false
+    if (line[i] === '/') {
+      isClosing = true
+      i++
+      while (/\s/.test(line[i] || '')) i++
+    }
+
+    const nameStart = i
+    while (/[A-Za-z0-9:_-]/.test(line[i] || '')) i++
+    const tagName = line.slice(nameStart, i)
+    if (!tagName) {
+      cursor = start + 1
+      continue
+    }
+
+    let quote = null
+    while (i < line.length) {
+      const char = line[i]
+      if (quote) {
+        if (char === quote) quote = null
+      } else if (char === '"' || char === "'") {
+        quote = char
+      } else if (char === '>') {
+        break
+      }
+      i++
+    }
+
+    if (i >= line.length) break
+
+    if (tagName.toLowerCase() === 'svg') {
+      let last = i - 1
+      while (/\s/.test(line[last] || '')) last--
+      events.push({
+        type: isClosing ? 'close' : 'open',
+        selfClosing: !isClosing && line[last] === '/'
+      })
+    }
+    cursor = i + 1
+  }
+
+  return { events, ignoredContent }
+}
+
+function getSvgDepth(events, depth = 0) {
+  for (const event of events) {
+    if (event.type === 'open' && !event.selfClosing) depth++
+    if (event.type === 'close' && depth > 0) depth--
+  }
+  return depth
+}
+
 function splitBlocks(mdText) {
   const lines = mdText.split('\n')
   const blocks = []
   let buf = []
   let fence = null
   let inMath = false
+  let svgDepth = 0
+  let svgIgnoredContent = null
 
   const flush = () => {
     if (buf.length) { blocks.push(buf.join('\n')); buf = [] }
@@ -238,6 +326,14 @@ function splitBlocks(mdText) {
       if (line.trim() === '$$') { flush(); inMath = false }
       continue
     }
+    if (svgDepth > 0) {
+      buf.push(line)
+      const svgScan = getSvgTagEvents(line, svgIgnoredContent)
+      svgIgnoredContent = svgScan.ignoredContent
+      svgDepth = getSvgDepth(svgScan.events, svgDepth)
+      if (svgDepth === 0) flush()
+      continue
+    }
 
     const fenceMatch = line.match(/^(`{3,}|~{3,})/)
     if (fenceMatch) {
@@ -247,6 +343,17 @@ function splitBlocks(mdText) {
 
     if (line.trim() === '$$') {
       flush(); inMath = true; buf.push(line)
+      continue
+    }
+
+    const svgScan = getSvgTagEvents(line, svgIgnoredContent)
+    svgIgnoredContent = svgScan.ignoredContent
+    const svgOpenIndex = svgScan.events.findIndex(event => event.type === 'open' && !event.selfClosing)
+    if (svgOpenIndex !== -1) {
+      flush()
+      buf.push(line)
+      svgDepth = getSvgDepth(svgScan.events.slice(svgOpenIndex))
+      if (svgDepth === 0) flush()
       continue
     }
 
