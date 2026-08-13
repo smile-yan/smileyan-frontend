@@ -15,7 +15,7 @@ export function initImageViewer(containerSelector) {
   console.log('Initializing native image viewer for:', containerSelector)
 
   // 清理之前的查看器
-  cleanupViewer()
+  closeViewer()
 
   // 获取所有图片
   const images = document.querySelectorAll(containerSelector + ' img')
