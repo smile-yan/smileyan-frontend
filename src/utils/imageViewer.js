@@ -149,64 +149,36 @@ function openViewer(startIndex) {
 function createToolbar() {
   const toolbar = document.createElement('div')
   toolbar.className = 'viewer-toolbar'
-  toolbar.style.cssText = `
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.98);
-    padding: 12px 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-  `
+  toolbar.style.position = 'fixed'
+  toolbar.style.bottom = '20px'
+  toolbar.style.left = '50%'
+  toolbar.style.transform = 'translateX(-50%)'
+  toolbar.style.display = 'flex'
+  toolbar.style.gap = '10px'
+  toolbar.style.background = 'white'
+  toolbar.style.padding = '10px'
+  toolbar.style.borderRadius = '5px'
+  toolbar.style.zIndex = '10000'
 
   const buttons = [
-    { icon: '◀', action: 'prev', title: '上一张' },
-    { icon: '▶', action: 'next', title: '下一张' },
-    { icon: '➕', action: 'zoomIn', title: '放大 (+)' },
-    { icon: '➖', action: 'zoomOut', title: '缩小 (-)' },
-    { icon: '↺', action: 'rotateLeft', title: '左旋' },
-    { icon: '↻', action: 'rotateRight', title: '右旋' },
-    { icon: '🔄', action: 'reset', title: '重置' },
-    { icon: '✕', action: 'close', title: '关闭 (ESC)' }
+    { text: '<', action: 'prev', title: '上一张' },
+    { text: '>', action: 'next', title: '下一张' },
+    { text: '+', action: 'zoomIn', title: '放大' },
+    { text: '-', action: 'zoomOut', title: '缩小' },
+    { text: 'R', action: 'rotateLeft', title: '左旋' },
+    { text: 'X', action: 'close', title: '关闭' }
   ]
 
   buttons.forEach(btn => {
     const button = document.createElement('button')
-    button.textContent = btn.icon
+    button.textContent = btn.text
     button.title = btn.title
-    button.className = 'viewer-button'
-    button.style.cssText = `
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 18px;
-      min-width: 44px;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    `
-
-    // 添加悬停效果
-    button.onmouseenter = () => {
-      button.style.background = '#f0f0f0'
-      button.style.transform = 'scale(1.1)'
-    }
-
-    button.onmouseleave = () => {
-      button.style.background = 'white'
-      button.style.transform = 'scale(1)'
-    }
-
+    button.style.margin = '0'
+    button.style.padding = '8px 12px'
+    button.style.fontSize = '16px'
+    button.style.cursor = 'pointer'
     button.onclick = (e) => {
-      e.stopPropagation() // 防止点击按钮关闭查看器
+      e.stopPropagation()
       handleAction(btn.action)
     }
     toolbar.appendChild(button)
