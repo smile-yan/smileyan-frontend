@@ -10,9 +10,16 @@ let isDragging = false
 let dragStartX = 0
 let dragStartY = 0
 let dragStartScale = 1
+let initializedSelectors = new Set() // 跟踪已初始化的容器
 
 export function initImageViewer(containerSelector) {
   console.log('Initializing native image viewer for:', containerSelector)
+
+  // 如果已经初始化过这个容器，跳过
+  if (initializedSelectors.has(containerSelector)) {
+    console.log('Container already initialized, skipping')
+    return
+  }
 
   // 清理之前的查看器
   closeViewer()
@@ -28,6 +35,7 @@ export function initImageViewer(containerSelector) {
 
   // 保存图片引用
   activeImages = Array.from(images)
+  initializedSelectors.add(containerSelector)
 
   // 为每个图片添加样式和点击事件
   images.forEach((img, index) => {
@@ -302,7 +310,7 @@ function closeViewer() {
   if (activeViewer) {
     document.body.removeChild(activeViewer)
     activeViewer = null
-    activeImages = []
+    // 不要清空 activeImages，因为图片的点击事件还需要使用它
     document.removeEventListener('keydown', handleKeydown)
     document.removeEventListener('mousedown', startDrag)
     document.removeEventListener('mousemove', drag)
