@@ -25,10 +25,11 @@ const route = useRoute()
 const page = ref(null)
 const loading = ref(true)
 let viewer = null
+let viewerInitialized = false // 防止重复初始化
 
 onMounted(async () => {
   try {
-    const res = await axios.get(`/api/pages/${route.params.slug}`)
+    const res = await axios.get(`/api/pages/pages/${route.params.slug}`)
     page.value = res.data
     // 等待 DOM 更新后初始化图片查看器
     await nextTick()
@@ -50,83 +51,93 @@ onUnmounted(() => {
 
 // 初始化图片查看器
 function initImageViewer() {
-  console.log('Initializing image viewer for page...')
-
-  const images = document.querySelectorAll('.page-content img')
-  console.log('Found images:', images.length)
-
-  if (images.length === 0) {
-    console.log('No images found in page')
+  // 防止重复初始化
+  if (viewerInitialized) {
+    console.log('Viewer already initialized for page, skipping')
     return
   }
 
-  // 销毁之前的查看器
-  if (viewer) {
-    try {
-      viewer.destroy()
-      console.log('Previous viewer destroyed')
-    } catch (e) {
-      console.log('Error destroying previous viewer:', e)
-    }
-    viewer = null
-  }
+  // 使用 requestAnimationFrame 确保 DOM 完全渲染
+  requestAnimationFrame(() => {
+    console.log('Initializing image viewer for page...')
 
-  // 直接在页面内容容器上初始化 viewerjs
-  const pageContent = document.querySelector('.page-content')
-  if (pageContent) {
-    try {
-      viewer = new Viewer(pageContent, {
-        toolbar: {
-          zoomIn: true,
-          zoomOut: true,
-          oneToOne: true,
-          reset: true,
-          prev: true,
-          play: true,
-          next: true,
-          rotateLeft: true,
-          rotateRight: true,
-          flipHorizontal: false,
-          flipVertical: false
-        },
-        title: function(image) {
-          return image.alt || ''
-        },
-        transition: true,
-        fullscreen: true,
-        keyboard: true,
-        loop: true,
-        minZoomRatio: 0.1,
-        maxZoomRatio: 10,
-        moveable: true,
-        zoomable: true,
-        scalable: true,
-        rotatable: true
+    const images = document.querySelectorAll('.page-content img')
+    console.log('Found images:', images.length)
+
+    if (images.length === 0) {
+      console.log('No images found in page')
+      return
+    }
+
+    // 销毁之前的查看器
+    if (viewer) {
+      try {
+        viewer.destroy()
+        console.log('Previous viewer destroyed')
+      } catch (e) {
+        console.log('Error destroying previous viewer:', e)
+      }
+      viewer = null
+    }
+
+    // 直接在页面内容容器上初始化 viewerjs
+    const pageContent = document.querySelector('.page-content')
+    if (pageContent) {
+      try {
+        viewer = new Viewer(pageContent, {
+          toolbar: {
+            zoomIn: true,
+            zoomOut: true,
+            oneToOne: true,
+            reset: true,
+            prev: true,
+            play: true,
+            next: true,
+            rotateLeft: true,
+            rotateRight: true,
+            flipHorizontal: false,
+            flipVertical: false
+          },
+          title: function(image) {
+            return image.alt || ''
+          },
+          transition: true,
+          fullscreen: true,
+          keyboard: true,
+          loop: true,
+          minZoomRatio: 0.1,
+          maxZoomRatio: 10,
+          moveable: true,
+          zoomable: true,
+          scalable: true,
+          rotatable: true
+        })
+        viewerInitialized = true
+        console.log('Viewer initialized successfully for page')
+      } catch (e) {
+        console.error('Error initializing viewer for page:', e)
+      }
+    }
+
+    // 为每个图片添加样式
+    images.forEach((img) => {
+      img.style.cursor = 'zoom-in'
+      img.style.transition = 'transform 0.2s, box-shadow 0.2s'
+
+      // 鼠标悬停效果
+      img.addEventListener('mouseenter', () => {
+        img.style.transform = 'scale(1.02)'
+        img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
       })
-      console.log('Viewer initialized successfully')
-    } catch (e) {
-      console.error('Error initializing viewer:', e)
-    }
-  }
 
-  // 为每个图片添加样式
-  images.forEach((img) => {
-    img.style.cursor = 'zoom-in'
-    img.style.transition = 'transform 0.2s, box-shadow 0.2s'
-
-    // 鼠标悬停效果
-    img.addEventListener('mouseenter', () => {
-      img.style.transform = 'scale(1.02)'
-      img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
+      img.addEventListener('mouseleave', () => {
+        img.style.transform = 'scale(1)'
+        img.style.boxShadow = 'none'
+      })
     })
 
-    img.addEventListener('mouseleave', () => {
-      img.style.transform = 'scale(1)'
-      img.style.boxShadow = 'none'
-    })
+    console.log('Page image viewer initialization complete')
   })
-
-  console.log('Page image viewer initialization complete')
 }
 </script>
 
