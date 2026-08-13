@@ -107,14 +107,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import { Edit } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
-import Viewer from 'viewerjs'
-import 'viewerjs/dist/viewer.css'
+import { initImageViewer as initNativeImageViewer, destroy as destroyNativeViewer } from '@/utils/imageViewer'
 
 const route = useRoute()
 const router = useRouter()
@@ -133,8 +132,6 @@ const tocLeft = ref(0)
 const isSpeaking = ref(false)
 let speechSynthesis = null
 let utterance = null
-let viewer = null
-let viewerInitialized = false // 防止重复初始化
 
 // TTS 朗读功能
 function initSpeech() {
@@ -143,95 +140,19 @@ function initSpeech() {
   }
 }
 
-// 图片查看器功能
+// 图片查看器功能 - 使用原生实现
 function initImageViewer() {
-  console.log('Initializing image viewer...')
-
-  // 防止重复初始化
-  if (viewerInitialized) {
-    console.log('Viewer already initialized, skipping')
-    return
-  }
+  console.log('Initializing native image viewer...')
 
   // 使用 requestAnimationFrame 确保 DOM 完全渲染
   requestAnimationFrame(() => {
-    // 获取文章内容中的所有图片
-    const images = document.querySelectorAll('.article-content img')
-    console.log('Found images:', images.length)
-
-    if (images.length === 0) {
-      console.log('No images found')
-      return
+    try {
+      // 使用原生图片查看器
+      initNativeImageViewer('.article-content')
+      console.log('Native image viewer initialized successfully')
+    } catch (e) {
+      console.error('Error initializing native image viewer:', e)
     }
-
-    // 销毁之前的查看器
-    if (viewer) {
-      try {
-        viewer.destroy()
-        console.log('Previous viewer destroyed')
-      } catch (e) {
-        console.log('Error destroying previous viewer:', e)
-      }
-      viewer = null
-    }
-
-    // 直接在文章内容容器上初始化 viewerjs
-    const articleContent = document.querySelector('.article-content')
-    if (articleContent) {
-      try {
-        viewer = new Viewer(articleContent, {
-          toolbar: {
-            zoomIn: true,
-            zoomOut: true,
-            oneToOne: true,
-            reset: true,
-            prev: true,
-            play: true,
-            next: true,
-            rotateLeft: true,
-            rotateRight: true,
-            flipHorizontal: false,
-            flipVertical: false
-          },
-          title: function(image) {
-            return image.alt || ''
-          },
-          transition: true,
-          fullscreen: true,
-          keyboard: true,
-          loop: true,
-          minZoomRatio: 0.1,
-          maxZoomRatio: 10,
-          moveable: true,
-          zoomable: true,
-          scalable: true,
-          rotatable: true
-        })
-        viewerInitialized = true
-        console.log('Viewer initialized successfully')
-      } catch (e) {
-        console.error('Error initializing viewer:', e)
-      }
-    }
-
-    // 为每个图片添加样式
-    images.forEach((img) => {
-      img.style.cursor = 'zoom-in'
-      img.style.transition = 'transform 0.2s, box-shadow 0.2s'
-
-      // 鼠标悬停效果
-      img.addEventListener('mouseenter', () => {
-        img.style.transform = 'scale(1.02)'
-        img.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'
-      })
-
-      img.addEventListener('mouseleave', () => {
-        img.style.transform = 'scale(1)'
-        img.style.boxShadow = 'none'
-      })
-    })
-
-    console.log('Image viewer initialization complete')
   })
 }
 
@@ -331,9 +252,7 @@ onUnmounted(() => {
   if (speechSynthesis) {
     speechSynthesis.cancel()
   }
-  if (viewer) {
-    viewer.destroy()
-  }
+  destroyNativeViewer()
 })
 
 function buildToc() {
