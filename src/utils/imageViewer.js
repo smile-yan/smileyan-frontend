@@ -99,6 +99,7 @@ function openViewer(startIndex) {
     justify-content: center;
     align-items: center;
     overflow: visible;
+    z-index: 1;
   `
   viewer.appendChild(imageContainer)
 
@@ -120,6 +121,7 @@ function openViewer(startIndex) {
 
   // 创建工具栏
   const toolbar = createToolbar()
+  toolbar.style.zIndex = '10' // 确保工具栏在最上层
   viewer.appendChild(toolbar)
 
   // 点击背景关闭
@@ -147,15 +149,17 @@ function createToolbar() {
   toolbar.className = 'viewer-toolbar'
   toolbar.style.cssText = `
     position: absolute;
-    bottom: 20px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.95);
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.98);
     padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
   `
 
   const buttons = [
@@ -199,7 +203,8 @@ function createToolbar() {
       button.style.transform = 'scale(1)'
     }
 
-    button.onclick = () => {
+    button.onclick = (e) => {
+      e.stopPropagation() // 防止点击按钮关闭查看器
       handleAction(btn.action)
     }
     toolbar.appendChild(button)
