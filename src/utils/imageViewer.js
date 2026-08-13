@@ -94,12 +94,11 @@ function openViewer(startIndex) {
   const imageContainer = document.createElement('div')
   imageContainer.className = 'viewer-image-container'
   imageContainer.style.cssText = `
-    max-width: 90%;
-    max-height: 90%;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: visible;
   `
   viewer.appendChild(imageContainer)
 
@@ -109,11 +108,12 @@ function openViewer(startIndex) {
   image.alt = activeImages[currentImageIndex].alt || ''
   image.className = 'viewer-image'
   image.style.cssText = `
-    max-width: 100%;
-    max-height: 100%;
+    max-width: 90vw;
+    max-height: 90vh;
     object-fit: contain;
     cursor: grab;
     transition: transform 0.2s ease;
+    transform-origin: center center;
   `
   updateImageTransform()
   imageContainer.appendChild(image)
