@@ -152,20 +152,21 @@ function createToolbar() {
     transform: translateX(-50%);
     display: flex;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 12px 20px;
     border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   `
 
   const buttons = [
-    { icon: '➡️', action: 'prev', title: '上一张' },
-    { icon: '➡️', action: 'next', title: '下一张' },
-    { icon: '🔍', action: 'zoomIn', title: '放大' },
-    { icon: '🔎', action: 'zoomOut', title: '缩小' },
-    { icon: '↪️', action: 'rotateLeft', title: '左旋' },
-    { icon: '↪️', action: 'rotateRight', title: '右旋' },
+    { icon: '◀', action: 'prev', title: '上一张' },
+    { icon: '▶', action: 'next', title: '下一张' },
+    { icon: '➕', action: 'zoomIn', title: '放大 (+)' },
+    { icon: '➖', action: 'zoomOut', title: '缩小 (-)' },
+    { icon: '↺', action: 'rotateLeft', title: '左旋' },
+    { icon: '↻', action: 'rotateRight', title: '右旋' },
     { icon: '🔄', action: 'reset', title: '重置' },
-    { icon: '✖️', action: 'close', title: '关闭' }
+    { icon: '✕', action: 'close', title: '关闭 (ESC)' }
   ]
 
   buttons.forEach(btn => {
@@ -176,13 +177,28 @@ function createToolbar() {
     button.style.cssText = `
       background: white;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 6px;
       padding: 8px 12px;
       cursor: pointer;
-      font-size: 16px;
-      min-width: 40px;
+      font-size: 18px;
+      min-width: 44px;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     `
+
+    // 添加悬停效果
+    button.onmouseenter = () => {
+      button.style.background = '#f0f0f0'
+      button.style.transform = 'scale(1.1)'
+    }
+
+    button.onmouseleave = () => {
+      button.style.background = 'white'
+      button.style.transform = 'scale(1)'
+    }
+
     button.onclick = () => {
       handleAction(btn.action)
     }
