@@ -11,6 +11,7 @@ let dragStartX = 0
 let dragStartY = 0
 let dragStartScale = 1
 let initializedSelectors = new Set() // 跟踪已初始化的容器
+let activeToolbar = null // 跟踪当前工具栏
 
 export function initImageViewer(containerSelector) {
   console.log('Initializing native image viewer for:', containerSelector)
@@ -119,10 +120,11 @@ function openViewer(startIndex) {
   updateImageTransform()
   imageContainer.appendChild(image)
 
-  // 创建工具栏
+  // 创建工具栏并添加到 body 中，确保在最上层
   const toolbar = createToolbar()
-  toolbar.style.zIndex = '10' // 确保工具栏在最上层
-  viewer.appendChild(toolbar)
+  toolbar.style.zIndex = '10000' // 确保工具栏在最上层
+  activeToolbar = toolbar // 保存工具栏引用
+  document.body.appendChild(toolbar)
 
   // 点击背景关闭
   viewer.addEventListener('click', (e) => {
@@ -328,6 +330,12 @@ function handleKeydown(e) {
 }
 
 function closeViewer() {
+  // 移除工具栏
+  if (activeToolbar) {
+    document.body.removeChild(activeToolbar)
+    activeToolbar = null
+  }
+
   if (activeViewer) {
     document.body.removeChild(activeViewer)
     activeViewer = null
