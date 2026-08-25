@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
+    optimizeDeps: {
+      entries: ['index.html']
+    },
     build: {
       outDir: 'dist',
       sourcemap: false,

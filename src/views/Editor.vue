@@ -152,6 +152,7 @@ import { useUserStore } from '../store/user'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
+import { initSvgViewer, destroySvgViewer } from '@/utils/svgViewer'
 
 const router = useRouter()
 const route = useRoute()
@@ -220,9 +221,17 @@ function getSvgTagEvents(line, ignoredContent = null) {
   const events = []
   let cursor = 0
 
+  // 使用拼接方式定义 HTML 注释 / CDATA 标记，避免 Vue/Vite 的预处理器
+  // 把字符串中的 <!-- / --> / <![CDATA[ / ]]> 误识别为 HTML 注释而破坏脚本
+  const LT = '<'
+  const COMMENT_START = LT + '!--'
+  const COMMENT_END = '--' + '>'
+  const CDATA_START = LT + '![CDATA['
+  const CDATA_END = ']]' + '>'
+
   while (cursor < line.length) {
     if (ignoredContent) {
-      const endMark = ignoredContent === 'comment' ? '-->' : ']]>'
+      const endMark = ignoredContent === 'comment' ? COMMENT_END : CDATA_END
       const end = line.indexOf(endMark, cursor)
       if (end === -1) return { events, ignoredContent }
       cursor = end + endMark.length
@@ -230,20 +239,20 @@ function getSvgTagEvents(line, ignoredContent = null) {
       continue
     }
 
-    const start = line.indexOf('<', cursor)
+    const start = line.indexOf(LT, cursor)
     if (start === -1) break
 
     // SVG 注释和 CDATA 中的标签文本不应影响分块状态
-    if (line.startsWith('<!--', start)) {
-      const end = line.indexOf('-->', start + 4)
+    if (line.startsWith(COMMENT_START, start)) {
+      const end = line.indexOf(COMMENT_END, start + COMMENT_START.length)
       if (end === -1) return { events, ignoredContent: 'comment' }
-      cursor = end + 3
+      cursor = end + COMMENT_END.length
       continue
     }
-    if (line.startsWith('<![CDATA[', start)) {
-      const end = line.indexOf(']]>', start + 9)
+    if (line.startsWith(CDATA_START, start)) {
+      const end = line.indexOf(CDATA_END, start + CDATA_START.length)
       if (end === -1) return { events, ignoredContent: 'cdata' }
-      cursor = end + 3
+      cursor = end + CDATA_END.length
       continue
     }
 
@@ -500,7 +509,7 @@ const renderedContent = computed(() => {
 let renderTimer = null
 let tyRenderTimer = null
 
-// split/preview 模式的 MathJax + PrismJS
+// split/preview 模式的 MathJax + PrismJS + SVG 查看器
 watch([renderedContent, previewMode], async () => {
   if (previewMode.value === 'edit' || previewMode.value === 'typora') return
   if (renderTimer) clearTimeout(renderTimer)
@@ -512,6 +521,9 @@ watch([renderedContent, previewMode], async () => {
     }
     if (window.Prism && previewRef.value) {
       window.Prism.highlightAllUnder(previewRef.value)
+    }
+    if (previewRef.value) {
+      initSvgViewer('.markdown-body')
     }
     requestAnimationFrame(() => { syncLock = false })
   }, 300)
@@ -550,6 +562,11 @@ async function renderTyporaContent() {
     if (window.MathJax && tyDocRef.value) {
       const rendered = [...tyDocRef.value.querySelectorAll('.ty-rendered')]
       if (rendered.length) await window.MathJax.typesetPromise(rendered)
+    }
+    if (tyDocRef.value) {
+      tyDocRef.value.querySelectorAll('.ty-rendered').forEach(el => {
+        initSvgViewer(el)
+      })
     }
     requestAnimationFrame(() => { syncLock = false })
   }, 50)
@@ -759,6 +776,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', onGlobalKeydown)
   if (renderTimer) clearTimeout(renderTimer)
   if (tyRenderTimer) clearTimeout(tyRenderTimer)
+  destroySvgViewer()
 })
 
 async function loadCategories() {
