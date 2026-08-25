@@ -35,11 +35,12 @@ function injectStyles() {
       background: #ffffff;
       border-radius: 32px;
       padding: 40px 40px 36px;
-      max-width: 80vw;
-      width: 100%;
+      width: fit-content;
+      max-width: 90vw;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
+      align-items: center;
       position: relative;
       transform: scale(0.88) translateY(20px);
       transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
@@ -79,16 +80,15 @@ function injectStyles() {
       display: flex;
       justify-content: center;
       align-items: center;
-      flex: 1;
-      min-height: 0;
-      width: 100%;
+      width: 66.67vw;
+      height: 66.67vh;
+      max-width: calc(90vw - 80px);
+      max-height: calc(90vh - 150px);
     }
 
     .svg-viewer-wrapper svg {
       width: 100%;
       height: 100%;
-      max-width: 66.67vw;
-      max-height: 66.67vh;
       display: block;
       filter: drop-shadow(0 8px 24px rgba(91, 124, 250, 0.20));
       animation: svg-viewer-float 3s ease-in-out infinite;
@@ -130,13 +130,15 @@ function injectStyles() {
     @media (max-width: 500px) {
       .svg-viewer-content {
         padding: 28px 20px 28px;
-        max-width: 90vw;
-        max-height: 90vh;
+        max-width: 95vw;
+        max-height: 95vh;
       }
 
-      .svg-viewer-wrapper svg {
-        max-width: 80vw;
-        max-height: 80vh;
+      .svg-viewer-wrapper {
+        width: 80vw;
+        height: 80vh;
+        max-width: calc(95vw - 40px);
+        max-height: calc(95vh - 120px);
       }
 
       .svg-viewer-title {
@@ -357,6 +359,14 @@ function cloneSvg(svg) {
 
   // 更新所有 url(#id) 引用
   rewriteUrlRefs(clone, idMap)
+
+  // 清除原始尺寸限制，避免页面中的 max-width/height 影响弹出框放大效果
+  clone.removeAttribute('width')
+  clone.removeAttribute('height')
+  clone.style.width = ''
+  clone.style.height = ''
+  clone.style.maxWidth = ''
+  clone.style.maxHeight = ''
 
   // 设置放大尺寸
   clone.setAttribute('width', '100%')
