@@ -35,13 +35,17 @@ function injectStyles() {
       background: #ffffff;
       border-radius: 32px;
       padding: 40px 40px 36px;
-      max-width: 560px;
+      max-width: 80vw;
       width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
       position: relative;
       transform: scale(0.88) translateY(20px);
       transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
       box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25);
       text-align: center;
+      overflow: hidden;
     }
 
     .svg-viewer-overlay.active .svg-viewer-content {
@@ -75,12 +79,16 @@ function injectStyles() {
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 200px;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
     }
 
     .svg-viewer-wrapper svg {
-      width: 200px;
-      height: 200px;
+      width: 100%;
+      height: 100%;
+      max-width: 66.67vw;
+      max-height: 66.67vh;
       display: block;
       filter: drop-shadow(0 8px 24px rgba(91, 124, 250, 0.20));
       animation: svg-viewer-float 3s ease-in-out infinite;
@@ -122,11 +130,13 @@ function injectStyles() {
     @media (max-width: 500px) {
       .svg-viewer-content {
         padding: 28px 20px 28px;
+        max-width: 90vw;
+        max-height: 90vh;
       }
 
       .svg-viewer-wrapper svg {
-        width: 140px;
-        height: 140px;
+        max-width: 80vw;
+        max-height: 80vh;
       }
 
       .svg-viewer-title {
@@ -181,7 +191,6 @@ export function initSvgViewer(containerSelector) {
     // 键盘无障碍支持
     svg.setAttribute('tabindex', '0')
     svg.setAttribute('role', 'button')
-    svg.setAttribute('aria-label', '点击放大查看 SVG')
     svg.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -267,13 +276,9 @@ function openModal(svg) {
 
   const desc = document.createElement('p')
   desc.className = 'svg-viewer-desc'
-  desc.textContent = '点击关闭按钮或背景任意处退出预览'
   content.appendChild(desc)
 
   const badge = document.createElement('span')
-  badge.className = 'svg-viewer-badge'
-  badge.textContent = 'SVG · 矢量图形'
-  content.appendChild(badge)
 
   content.insertBefore(wrapper, content.firstChild)
   content.insertBefore(closeBtn, content.firstChild)
