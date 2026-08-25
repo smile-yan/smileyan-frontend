@@ -114,6 +114,7 @@ import { Edit } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import { initImageViewer as initNativeImageViewer, destroy as destroyNativeViewer } from '@/utils/imageViewer'
+import { initSvgViewer as initNativeSvgViewer, destroySvgViewer as destroyNativeSvgViewer } from '@/utils/svgViewer'
 
 const route = useRoute()
 const router = useRouter()
@@ -149,6 +150,8 @@ function initImageViewer() {
     try {
       // 使用原生图片查看器
       initNativeImageViewer('.article-content')
+      // 初始化 SVG 放大查看器
+      initNativeSvgViewer('.article-content')
       console.log('Native image viewer initialized successfully')
     } catch (e) {
       console.error('Error initializing native image viewer:', e)
@@ -253,6 +256,7 @@ onUnmounted(() => {
     speechSynthesis.cancel()
   }
   destroyNativeViewer()
+  destroyNativeSvgViewer()
 })
 
 function buildToc() {
@@ -513,6 +517,17 @@ function editPost() {
 :deep(.article-content img:hover) {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 文章内容中的 SVG 可点击放大 */
+:deep(.article-content svg[data-svg-viewer-init]) {
+  outline: none;
+}
+
+:deep(.article-content svg[data-svg-viewer-init]:focus-visible) {
+  outline: 2px solid #5b7cfa;
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 /* blockquote 样式 */

@@ -18,6 +18,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '@/utils/axios'
 import { initImageViewer, destroy as destroyViewer } from '@/utils/imageViewer'
+import { initSvgViewer, destroySvgViewer } from '@/utils/svgViewer'
 
 const route = useRoute()
 
@@ -33,6 +34,7 @@ onMounted(async () => {
     await nextTick()
     setTimeout(() => {
       initImageViewer('.page-content')
+      initSvgViewer('.page-content')
     }, 100)
   } catch (e) {
     console.error('Failed to load page', e)
@@ -43,6 +45,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   destroyViewer()
+  destroySvgViewer()
 })
 </script>
 
@@ -73,6 +76,16 @@ onUnmounted(() => {
 .page-content img:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.page-content svg[data-svg-viewer-init] {
+  outline: none;
+}
+
+.page-content svg[data-svg-viewer-init]:focus-visible {
+  outline: 2px solid #5b7cfa;
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 .loading {
