@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG Viewer Test</title>
+</head>
+<body>
+  <div class="content">
+    <svg viewBox="0 0 100 100" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FF6B6B" />
+          <stop offset="50%" stop-color="#FFD93D" />
+          <stop offset="100%" stop-color="#4D96FF" />
+        </linearGradient>
+      </defs>
+      <path d="M50 8 L59 36 L89 36 L66 52 L77 80 L50 64 L23 80 L34 52 L11 36 L41 36 Z" fill="url(#starGrad)" stroke="#ffffff" stroke-width="2" stroke-linejoin="round" />
+    </svg>
+  </div>
+  <script type="module">
+    import { initSvgViewer } from '/src/utils/svgViewer.js'
+    initSvgViewer('.content')
+    setTimeout(() => {
+      document.querySelector('.content svg').click()
+    }, 500)
+  </script>
+</body>
+</html>

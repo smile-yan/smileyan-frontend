@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点击 SVG 弹出放大效果</title>
+    <style>
+        /* ===== 页面基础样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f0f4f8;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        /* ===== 卡片容器 ===== */
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 40px 48px 48px;
+            box-shadow: 0 20px 60px rgba(0, 20, 40, 0.12);
+            text-align: center;
+            transition: transform 0.2s;
+            max-width: 480px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1a2634;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .card p {
+            color: #5e6f8d;
+            font-size: 15px;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        /* ===== SVG 缩略图（可点击） ===== */
+        .svg-thumb {
+            display: inline-block;
+            cursor: pointer;
+            padding: 16px;
+            border-radius: 16px;
+            background: #f8faff;
+            border: 2px solid #e9edf4;
+            transition: all 0.25s ease;
+            width: 120px;
+            height: 120px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .svg-thumb:hover {
+            border-color: #5b7cfa;
+            background: #f0f4ff;
+            transform: scale(1.04);
+            box-shadow: 0 8px 24px rgba(91, 124, 250, 0.18);
+        }
+
+        .svg-thumb:active {
+            transform: scale(0.96);
+        }
+
+        .svg-thumb svg {
+            width: 80px;
+            height: 80px;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        .svg-thumb:hover svg {
+            transform: rotate(-4deg) scale(1.02);
+        }
+
+        /* ===== 点击提示 ===== */
+        .hint {
+            margin-top: 18px;
+            font-size: 14px;
+            color: #8a9bb5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .hint span {
+            display: inline-block;
+            animation: pulse-dot 1.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(0.9);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* ===== 模态框（弹出层） ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 20, 40, 0.72);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+            z-index: 9999;
+            padding: 24px;
+        }
+
+        /* 打开状态 */
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ===== 模态框内容卡片 ===== */
+        .modal-content {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 40px 40px 36px;
+            max-width: 560px;
+            width: 100%;
+            position: relative;
+            transform: scale(0.88) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.4s ease;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        /* ===== 关闭按钮 ===== */
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 32px;
+            line-height: 1;
+            color: #8a9bb5;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            font-weight: 300;
+        }
+
+        .modal-close:hover {
+            color: #1a2634;
+            background: #f0f4f8;
+            transform: rotate(90deg);
+        }
+
+        /* ===== 模态框内的 SVG（放大版） ===== */
+        .modal-svg-wrapper {
+            padding: 24px 0 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-svg-wrapper svg {
+            width: 200px;
+            height: 200px;
+            display: block;
+            filter: drop-shadow(0 8px 24px rgba(91, 124, 250, 0.20));
+            animation: float-svg 3s ease-in-out infinite;
+        }
+
+        @keyframes float-svg {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .modal-content h3 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a2634;
+            margin-top: 8px;
+            margin-bottom: 6px;
+        }
+
+        .modal-content .desc {
+            color: #5e6f8d;
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 360px;
+            margin: 0 auto 8px;
+        }
+
+        .modal-content .badge {
+            display: inline-block;
+            background: #eef3fe;
+            color: #4a6cf7;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 4px 18px;
+            border-radius: 40px;
+            margin-top: 12px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 500px) {
+            .card {
+                padding: 28px 20px 32px;
+            }
+
+            .modal-content {
+                padding: 28px 20px 28px;
+            }
+
+            .modal-svg-wrapper svg {
+                width: 140px;
+                height: 140px;
+            }
+
+            .svg-thumb {
+                width: 96px;
+                height: 96px;
+            }
+
+            .svg-thumb svg {
+                width: 60px;
+                height: 60px;
+            }
+
+            .modal-content h3 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- 可点击的 SVG 缩略图 -->
+        <div class="svg-thumb" id="svgTrigger" role="button" tabindex="0" aria-label="点击放大查看 SVG">
+            <!-- 这里放一个漂亮的 SVG 图形 —— 彩虹渐变星星 + 光晕 -->
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FF6B6B" />
+                        <stop offset="25%" stop-color="#FFB86B" />
+                        <stop offset="50%" stop-color="#FFD93D" />
+                        <stop offset="75%" stop-color="#6BCB77" />
+                        <stop offset="100%" stop-color="#4D96FF" />
+                    </linearGradient>
+                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#FFD93D" stop-opacity="0.35" />
+                        <stop offset="100%" stop-color="#FFD93D" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+                <!-- 光晕 -->
+                <circle cx="50" cy="50" r="46" fill="url(#glow)" />
+                <!-- 星形 (五角星) -->
+                <path d="M50 8 L59 36 L89 36 L66 52 L77 80 L50 64 L23 80 L34 52 L11 36 L41 36 Z"
+                fill="url(#starGrad)"
+                stroke="#ffffff"
+                stroke-width="2"
+                stroke-linejoin="round" />
+                <!-- 高光点缀 -->
+                <circle cx="42" cy="28" r="3" fill="#ffffff" opacity="0.6" />
+                <circle cx="68" cy="44" r="2" fill="#ffffff" opacity="0.4" />
+            </svg>
+        </div>
+
+    </div>
+
+    <!-- ===== 模态框（弹出层） ===== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-label="SVG 放大预览">
+            <!-- 关闭按钮 -->
+            <button class="modal-close" id="modalClose" aria-label="关闭预览">✕</button>
+
+            <!-- 放大的 SVG -->
+            <div class="modal-svg-wrapper">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="starGradBig" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FF6B6B" />
+                            <stop offset="25%" stop-color="#FFB86B" />
+                            <stop offset="50%" stop-color="#FFD93D" />
+                            <stop offset="75%" stop-color="#6BCB77" />
+                            <stop offset="100%" stop-color="#4D96FF" />
+                        </linearGradient>
+                        <radialGradient id="glowBig" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#FFD93D" stop-opacity="0.30" />
+                            <stop offset="100%" stop-color="#FFD93D" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#glowBig)" />
+                    <path d="M50 8 L59 36 L89 36 L66 52 L77 80 L50 64 L23 80 L34 52 L11 36 L41 36 Z"
+                    fill="url(#starGradBig)"
+                    stroke="#ffffff"
+                    stroke-width="2.5"
+                    stroke-linejoin="round" />
+                    <circle cx="42" cy="28" r="3.5" fill="#ffffff" opacity="0.5" />
+                    <circle cx="68" cy="44" r="2.5" fill="#ffffff" opacity="0.35" />
+                </svg>
+            </div>
+
+            <h3>✨ 彩虹星</h3>
+            <p class="desc">点击关闭按钮或背景任意处即可退出预览</p>
+            <span class="badge">SVG · 矢量图形</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ----- DOM 元素 -----
+            const trigger = document.getElementById('svgTrigger');
+            const overlay = document.getElementById('modalOverlay');
+            const closeBtn = document.getElementById('modalClose');
+
+            // ----- 打开模态框 -----
+            function openModal() {
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden'; // 禁止背景滚动
+                // 让关闭按钮获得焦点（无障碍）
+                setTimeout(() => closeBtn.focus(), 100);
+            }
+
+            // ----- 关闭模态框 -----
+            function closeModal() {
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+                // 将焦点返回给触发元素
+                setTimeout(() => trigger.focus(), 100);
+            }
+
+            // ----- 事件绑定 -----
+
+            // 1. 点击缩略图 → 打开
+            trigger.addEventListener('click', openModal);
+
+            // 2. 键盘支持：回车 / 空格 触发打开（无障碍）
+            trigger.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openModal();
+                }
+            });
+
+            // 3. 点击关闭按钮 → 关闭
+            closeBtn.addEventListener('click', closeModal);
+
+            // 4. 点击模态框背景（overlay 自身）→ 关闭
+            overlay.addEventListener('click', (e) => {
+                // 只有点击到 overlay 本身（而不是其子元素）才关闭
+                if (e.target === overlay) {
+                    closeModal();
+                }
+            });
+
+            // 5. 键盘 ESC → 关闭
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+
+            // 6. 窗口 resize 时保持模态框居中（无需额外操作，flex 已经处理）
+
+            // 7. 可选：点击模态框内容区不关闭（默认事件冒泡已处理）
+            //    overlay 的点击判断 e.target === overlay 已经保证了只有点背景才关
+
+            // 8. 防止关闭按钮丢失焦点样式（保留默认）
+
+            console.log('✨ SVG 弹出效果已启动 — 点击星星试试！');
+        })();
+    </script>
+
+</body>
+</html>

@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src')
+        '@': resolve(import.meta.dirname, 'src')
       }
     },
     server: {
@@ -25,17 +25,18 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-    optimizeDeps: {
-      entries: ['index.html']
-    },
     build: {
       outDir: 'dist',
       sourcemap: false,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'element-plus': ['element-plus'],
-            'vendor': ['vue', 'vue-router', 'pinia', 'axios']
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('element-plus') || id.includes('@element-plus')) {
+                return 'element-plus'
+              }
+              return 'vendor'
+            }
           }
         }
       }
