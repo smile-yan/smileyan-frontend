@@ -8,20 +8,25 @@
 #
 # 环境变量：
 #   RELEASE_TAG    当前发布的 tag 名（例如 v1.2.3），仅用于备份命名
+#   DEPLOY_DIR     部署目录（对应 SERVERS_CONFIG 中的 deploy_path），默认 /var/www/html
 #
 # 前置条件：
-#   - 运行此脚本的用户对 /var/www/html 有写权限（通过 sudo 限定命令白名单）
+#   - 运行此脚本的用户对 DEPLOY_DIR 有写权限（通过 sudo 限定命令白名单）
 #   - 服务器已安装 curl（用于本地健康检查，可选）
-#   - 部署包已上传到 /tmp/smileyan-frontend.tar.gz
+#   - 部署包已上传到 /tmp/smileyan-frontend-<tag>.tar.gz（或旧版固定名 /tmp/smileyan-frontend.tar.gz）
 
 set -euo pipefail
-DEPLOY_DIR=/var/www/html
-PKG=/tmp/smileyan-frontend.tar.gz
+DEPLOY_DIR="${DEPLOY_DIR:-/var/www/html}"
 TAG="${RELEASE_TAG:-unknown}"
+PKG=""
+for candidate in "/tmp/smileyan-frontend-${TAG}.tar.gz" "/tmp/smileyan-frontend.tar.gz"; do
+  if [ -f "$candidate" ]; then PKG="$candidate"; break; fi
+done
 TS=$(date +%Y%m%d-%H%M%S)
-BACKUP_DIR=/var/www/.backups/smileyan-frontend
+# 备份目录放在部署目录的上一级，兼容 /var/www/html 与 /opt/xxx
+BACKUP_DIR="$(dirname "$DEPLOY_DIR")/.backups/smileyan-frontend"
 
-test -f "$PKG" || { echo "missing $PKG"; exit 1; }
+test -n "$PKG" || { echo "missing /tmp/smileyan-frontend-${TAG}.tar.gz"; exit 1; }
 
 # 备份上一版（仅当目标目录非空时）
 sudo mkdir -p "$BACKUP_DIR"

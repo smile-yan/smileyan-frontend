@@ -9,8 +9,57 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy to Production
+  validate-config:
+    name: Validate deployment config
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check SERVERS_CONFIG
+        # Validate before the build/matrix so a malformed SERVERS_CONFIG fails
+        # with a readable message instead of an opaque fromJSON error.
+        env:
+          RAW: ${{ vars.SERVERS_CONFIG }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          raw = os.environ.get("RAW", "").strip()
+          if not raw:
+              sys.exit("ERROR: repository variable SERVERS_CONFIG is empty")
+
+          try:
+              servers = json.loads(raw)
+          except json.JSONDecodeError as exc:
+              sys.exit(f"ERROR: SERVERS_CONFIG is not valid JSON: {exc}")
+
+          if not isinstance(servers, list) or not servers:
+              sys.exit("ERROR: SERVERS_CONFIG must be a non-empty JSON array")
+
+          required = ("name", "addr", "port", "user", "deploy_path")
+          failed = False
+          for index, server in enumerate(servers):
+              if not isinstance(server, dict):
+                  print(f"ERROR: SERVERS_CONFIG[{index}] is not an object", file=sys.stderr)
+                  failed = True
+                  continue
+              missing = [key for key in required if not str(server.get(key, "")).strip()]
+              if missing:
+                  print(
+                      f"ERROR: SERVERS_CONFIG[{index}] "
+                      f"({server.get('name', '<unnamed>')}) is missing: {', '.join(missing)}",
+                      file=sys.stderr,
+                  )
+                  failed = True
+
+          if failed:
+              sys.exit(1)
+
+          print(f"OK: {len(servers)} server(s) configured")
+          PY
+
+  build:
+    name: Build and package
+    needs: validate-config
     runs-on: ubuntu-latest
 
     steps:
@@ -35,25 +84,54 @@ jobs:
           VITE_API_BASE_URL: ${{ vars.PROD_API_BASE_URL || secrets.PROD_API_BASE_URL || '' }}
         run: npm run build:prod
 
-      - name: Upload dist artifact (debug only)
-        # 升级到 v7：v5 仍以 Node 20 为目标，v6.0+ 才完成 runtime 迁移到 Node 24
-        # 见 https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist-${{ github.ref_name }}
-          path: dist
-          retention-days: 7
-
       - name: Pack dist into tarball
         run: |
           tar -czf smileyan-frontend-${{ github.ref_name }}.tar.gz -C dist .
 
+      - name: Upload tarball artifact
+        # Downloadable from the run page for debugging; consumed by the deploy
+        # job so the build runs once regardless of how many servers are listed.
+        uses: actions/upload-artifact@v7
+        with:
+          name: smileyan-frontend-${{ github.ref_name }}
+          path: smileyan-frontend-${{ github.ref_name }}.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy to ${{ matrix.server.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        # SERVERS_CONFIG is a JSON array stored as a Repository Variable:
+        # [
+        #   {
+        #     "name": "prod-1",
+        #     "addr": "1.2.3.4",
+        #     "port": "22",
+        #     "user": "deploy",
+        #     "deploy_path": "/opt/bigbigpig-frontend"
+        #   }
+        # ]
+        # `deploy_path` is where the dist tarball is extracted on that server;
+        # point Caddy/Nginx at the same directory.
+        server: ${{ fromJSON(vars.SERVERS_CONFIG || '[]') }}
+
+    steps:
+      - name: Download tarball artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: smileyan-frontend-${{ github.ref_name }}
+          path: .
+
       - name: Copy tarball to server
         uses: appleboy/scp-action@v1.0.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          port: ${{ secrets.SSH_PORT }}
-          username: ${{ secrets.SSH_USER }}
+          host: ${{ matrix.server.addr }}
+          port: ${{ matrix.server.port }}
+          username: ${{ matrix.server.user }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "smileyan-frontend-${{ github.ref_name }}.tar.gz"
           target: "/tmp/"
@@ -63,17 +141,18 @@ jobs:
         uses: appleboy/ssh-action@v1.2.5
         env:
           RELEASE_TAG: ${{ github.ref_name }}
+          DEPLOY_DIR: ${{ matrix.server.deploy_path }}
         with:
-          host: ${{ secrets.SSH_HOST }}
-          port: ${{ secrets.SSH_PORT }}
-          username: ${{ secrets.SSH_USER }}
+          host: ${{ matrix.server.addr }}
+          port: ${{ matrix.server.port }}
+          username: ${{ matrix.server.user }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 5m
-          envs: RELEASE_TAG
+          envs: RELEASE_TAG,DEPLOY_DIR
           script: |
             set -eo pipefail
             export RELEASE_TAG="$RELEASE_TAG"
-            DEPLOY_DIR=/var/www/html
+            : "${DEPLOY_DIR:?DEPLOY_DIR is required (deploy_path in SERVERS_CONFIG)}"
             # 支持两种文件名：旧版固定名 / 新版带 tag 名
             PKG=""
             for candidate in "/tmp/smileyan-frontend-${RELEASE_TAG}.tar.gz" "/tmp/smileyan-frontend.tar.gz"; do
@@ -87,7 +166,8 @@ jobs:
             echo "using package: $PKG"
             TAG="${RELEASE_TAG:-unknown}"
             TS=$(date +%Y%m%d-%H%M%S)
-            BACKUP_DIR=/var/www/.backups/smileyan-frontend
+            # 备份目录放在部署目录的上一级，兼容 /var/www/html 与 /opt/xxx
+            BACKUP_DIR="$(dirname "$DEPLOY_DIR")/.backups/smileyan-frontend"
 
             sudo mkdir -p "$BACKUP_DIR"
             if [ -d "$DEPLOY_DIR" ] && [ -n "$(sudo ls -A "$DEPLOY_DIR" 2>/dev/null || true)" ]; then
@@ -106,4 +186,4 @@ jobs:
               curl -fsS -o /dev/null "http://127.0.0.1/" || echo "WARN: local health check failed"
             fi
 
-            echo "deploy ok: tag=$TAG at $TS"
+            echo "deploy ok: tag=$TAG at $TS -> $DEPLOY_DIR"
