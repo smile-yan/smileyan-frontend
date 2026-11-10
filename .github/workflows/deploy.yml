@@ -73,7 +73,24 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --registry=https://registry.npmmirror.com
+        # 依赖源策略：优先官方源，失败时回退国内镜像。镜像偶发 5xx（如 504）
+        # 不应让整个部署失败，因此同时调高 npm 的重试次数/超时。
+        env:
+          NPM_CONFIG_FETCH_RETRIES: '5'
+          NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: '20000'
+          NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: '120000'
+          NPM_CONFIG_FETCH_TIMEOUT: '300000'
+        run: |
+          for registry in https://registry.npmjs.org https://registry.npmmirror.com; do
+            echo "==> npm ci (registry: $registry)"
+            if npm ci --legacy-peer-deps --no-audit --no-fund --registry="$registry"; then
+              echo "==> dependencies installed from $registry"
+              exit 0
+            fi
+            echo "WARN: npm ci failed against $registry; falling back" >&2
+          done
+          echo "ERROR: npm ci failed against all registries" >&2
+          exit 1
 
       - name: Build for production
         # VITE_API_BASE_URL 留空时，dist 中的请求走相对路径 /api，
