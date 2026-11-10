@@ -96,9 +96,11 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from '@/utils/axios'
-import dayjs from 'dayjs'
 import { Search, Menu } from '@element-plus/icons-vue'
 import SidebarContent from './SidebarContent.vue'
+
+// 日历日期在 SPA 生命周期内复用：从文章页返回首页不再重复请求
+let postDatesPromise = null
 
 const router = useRouter()
 const route = useRoute()
@@ -186,18 +188,16 @@ async function loadTags() {
 }
 
 async function loadPostDates() {
-  try {
-    // 获取所有文章（不分页）来获取日期
-    const res = await axios.get('/api/posts', { params: { page_size: 1000 } })
-    const dates = new Set()
-    res.data.list.forEach(post => {
-      const date = dayjs(post.created_at).format('YYYY-MM-DD')
-      dates.add(date)
-    })
-    postDates.value = dates
-  } catch (e) {
-    console.error('加载文章日期失败', e)
+  if (!postDatesPromise) {
+    postDatesPromise = axios.get('/api/posts/dates')
+      .then(res => new Set(res.data.map(item => item.date)))
+      .catch(e => {
+        console.error('加载文章日期失败', e)
+        postDatesPromise = null // 失败不缓存，下次可重试
+        return new Set()
+      })
   }
+  postDates.value = await postDatesPromise
 }
 
 async function loadPosts() {
