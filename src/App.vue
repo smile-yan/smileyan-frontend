@@ -15,7 +15,7 @@
             <el-menu-item v-for="page in pages" :key="page.id" :index="page.slug ? '/page/' + page.slug : ''" v-show="page.slug && page.slug !== 'book'">
               {{ page.title }}
             </el-menu-item>
-            <el-menu-item v-if="user && user.role === 'admin'" index="/admin">管理后台</el-menu-item>
+            <el-menu-item v-if="userStore.isAdmin || apiKeyStore.hasApiKey" index="/admin">管理后台</el-menu-item>
           </el-menu>
           <div class="user-area">
             <template v-if="user">
@@ -31,6 +31,9 @@
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
+            </template>
+            <template v-else-if="apiKeyStore.hasApiKey">
+              <el-tag type="success" closable @close="clearApiKey">Key 访问中</el-tag>
             </template>
             <template v-else>
               <el-button type="primary" @click="showLogin = true">登录</el-button>
@@ -58,22 +61,36 @@
 
     <!-- 登录对话框 -->
     <el-dialog v-model="showLogin" title="登录" width="400px">
-      <el-form :model="loginForm" @submit.prevent="handleLogin" label-position="left" label-width="60px">
-        <el-form-item label="邮箱">
-          <el-input v-model="loginForm.email" placeholder="请输入邮箱" />
-        </el-form-item>
-        <el-form-item label="验证码">
-          <div class="code-input">
-            <el-input v-model="loginForm.code" placeholder="请输入验证码" />
-            <el-button class="send-code-btn" @click="sendCode" :disabled="codeCountdown > 0 || codeLoading" :loading="codeLoading">
-              {{ codeCountdown > 0 ? `${codeCountdown}s` : (codeLoading ? '发送中' : '发送验证码') }}
-            </el-button>
-          </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" native-type="submit" style="width: 100%">登录</el-button>
-        </el-form-item>
-      </el-form>
+      <el-tabs v-model="loginTab">
+        <el-tab-pane label="邮箱登录" name="email">
+          <el-form :model="loginForm" @submit.prevent="handleLogin" label-position="left" label-width="60px">
+            <el-form-item label="邮箱">
+              <el-input v-model="loginForm.email" placeholder="请输入邮箱" />
+            </el-form-item>
+            <el-form-item label="验证码">
+              <div class="code-input">
+                <el-input v-model="loginForm.code" placeholder="请输入验证码" />
+                <el-button class="send-code-btn" @click="sendCode" :disabled="codeCountdown > 0 || codeLoading" :loading="codeLoading">
+                  {{ codeCountdown > 0 ? `${codeCountdown}s` : (codeLoading ? '发送中' : '发送验证码') }}
+                </el-button>
+              </div>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" native-type="submit" style="width: 100%">登录</el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="访问 Key" name="apikey">
+          <el-form @submit.prevent="handleApiKeyLogin" label-position="left" label-width="60px">
+            <el-form-item label="Key">
+              <el-input v-model="apiKeyInput" type="password" show-password placeholder="请输入管理员发放的访问 Key" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" native-type="submit" :loading="apiKeyLoading" style="width: 100%">使用 Key 进入</el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
     </el-dialog>
 
     <!-- 个人资料对话框 -->
@@ -98,6 +115,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from './store/user'
+import { useApiKeyStore } from './store/apikey'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
@@ -105,6 +123,7 @@ import axios from '@/utils/axios'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const apiKeyStore = useApiKeyStore()
 
 const user = computed(() => userStore.user)
 const showLogin = ref(false)
@@ -112,6 +131,9 @@ const showProfile = ref(false)
 const pages = ref([])
 const codeCountdown = ref(0)
 const codeLoading = ref(false)
+const loginTab = ref('email')
+const apiKeyInput = ref('')
+const apiKeyLoading = ref(false)
 
 const loginForm = reactive({
   email: localStorage.getItem('rememberedEmail') || '',
@@ -181,6 +203,34 @@ async function handleLogin() {
   } catch (e) {
     ElMessage.error(e.response?.data?.error || '登录失败')
   }
+}
+
+// 用一次轻量的内容接口校验 key 是否有效，通过后才写入本地存储
+async function handleApiKeyLogin() {
+  if (!apiKeyInput.value) {
+    ElMessage.warning('请输入访问 Key')
+    return
+  }
+  apiKeyLoading.value = true
+  try {
+    await axios.get('/api/admin/posts/summary', {
+      params: { page: 1, page_size: 1 },
+      headers: { 'X-API-Key': apiKeyInput.value }
+    })
+    apiKeyStore.setApiKey(apiKeyInput.value)
+    apiKeyInput.value = ''
+    showLogin.value = false
+    ElMessage.success('Key 已生效，可以进入管理后台')
+  } catch (e) {
+    ElMessage.error(e.response?.status === 401 || e.response?.status === 403 ? 'Key 无效或已过期' : '验证失败，请稍后重试')
+  } finally {
+    apiKeyLoading.value = false
+  }
+}
+
+function clearApiKey() {
+  apiKeyStore.clearApiKey()
+  ElMessage.success('已清除访问 Key')
 }
 
 function handleCommand(command) {

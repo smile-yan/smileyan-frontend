@@ -149,6 +149,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../store/user'
+import { useApiKeyStore } from '../store/apikey'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
@@ -157,6 +158,7 @@ import { initSvgViewer, destroySvgViewer } from '@/utils/svgViewer'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const apiKeyStore = useApiKeyStore()
 
 // 获取回调地址，如果没有则默认回文章列表
 const returnUrl = computed(() => {
@@ -731,7 +733,8 @@ function initResizer() {
 // ── 数据加载与保存 ────────────────────────────────────
 
 onMounted(async () => {
-  if (!userStore.isLoggedIn) {
+  // 管理员或持有有效 API key 的用户可以编辑
+  if (!userStore.isLoggedIn && !apiKeyStore.hasApiKey) {
     ElMessage.warning('请先登录')
     router.push('/')
     return
@@ -739,7 +742,7 @@ onMounted(async () => {
   if (!userStore.user && userStore.token) {
     await userStore.fetchUser()
   }
-  if (!userStore.isAdmin) {
+  if (!userStore.isAdmin && !apiKeyStore.hasApiKey) {
     ElMessage.warning('需要管理员权限')
     router.push('/')
     return
