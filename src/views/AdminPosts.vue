@@ -36,7 +36,7 @@
       />
     </div>
 
-    <el-table :data="posts" border>
+    <el-table :data="posts" border v-loading="loading">
       <el-table-column prop="title" label="标题" />
       <el-table-column prop="slug" label="Slug" width="120" />
       <el-table-column prop="status" label="状态" width="100">
@@ -82,6 +82,7 @@ const route = useRoute()
 const posts = ref([])
 const categories = ref([])
 const tags = ref([])
+const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -91,7 +92,7 @@ const tagFilter = ref('')
 const keywordFilter = ref('')
 const showSearchInput = ref(false)
 
-onMounted(async () => {
+onMounted(() => {
   // 从 URL 读取页码和筛选条件
   const pageParam = route.params.page
   if (pageParam) {
@@ -105,7 +106,9 @@ onMounted(async () => {
     showSearchInput.value = true
   }
 
-  await Promise.all([loadCategories(), loadTags()])
+  // 与首页一致：筛选项不阻塞文章列表，三个请求并行
+  loadCategories()
+  loadTags()
   loadPosts()
 })
 
@@ -160,9 +163,15 @@ async function loadPosts() {
   if (tagFilter.value) params.tag_id = tagFilter.value
   if (keywordFilter.value) params.keyword = keywordFilter.value
 
-  const res = await axios.get('/api/admin/posts', { params })
-  posts.value = res.data.list
-  total.value = res.data.total
+  loading.value = true
+  try {
+    // 列表接口只返回表格需要的字段，不再携带文章正文
+    const res = await axios.get('/api/admin/posts/summary', { params })
+    posts.value = res.data.list
+    total.value = res.data.total
+  } finally {
+    loading.value = false
+  }
 }
 
 function viewPost(post) {
