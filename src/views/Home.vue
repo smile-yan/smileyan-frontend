@@ -208,14 +208,14 @@ async function loadPosts() {
   if (categoryId.value) params.category_id = categoryId.value
   if (tagId.value) params.tag_id = tagId.value
 
-  const res = await axios.get('/api/posts', { params })
+  const res = await axios.get('/api/posts/summary', { params })
   posts.value = res.data.list
   total.value = res.data.total
 }
 
 async function loadPostsByDate(dateStr) {
   try {
-    const res = await axios.get('/api/posts', {
+    const res = await axios.get('/api/posts/summary', {
       params: {
         page: 1,
         page_size: 100,
