@@ -46,7 +46,6 @@ const routes = [
       { path: 'tags', component: () => import('../views/AdminTags.vue') },
       { path: 'pages', component: () => import('../views/AdminPages.vue') },
       { path: 'subscriptions', component: () => import('../views/AdminSubscriptions.vue') },
-      { path: 'keys', component: () => import('../views/AdminKeys.vue') },
       { path: 'editor/:id?', component: () => import('../views/Editor.vue') }
     ]
   }
