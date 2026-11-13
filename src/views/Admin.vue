@@ -27,6 +27,10 @@
             <el-icon><Message /></el-icon>
             <span>订阅管理</span>
           </el-menu-item>
+          <el-menu-item v-if="isAdmin" index="/admin/keys">
+            <el-icon><Key /></el-icon>
+            <span>令牌管理</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-main>
@@ -40,7 +44,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../store/user'
-import { Document, ChatDotRound, Folder, PriceTag, DocumentCopy, Message } from '@element-plus/icons-vue'
+import { Document, ChatDotRound, Folder, PriceTag, DocumentCopy, Message, Key } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
