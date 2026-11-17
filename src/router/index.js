@@ -16,6 +16,11 @@ const routes = [
     component: Post
   },
   {
+    path: '/post/:slug/related',
+    name: 'RelatedPosts',
+    component: () => import('../views/RelatedPosts.vue')
+  },
+  {
     path: '/page/:slug',
     name: 'Page',
     component: Page
@@ -44,6 +49,7 @@ const routes = [
       { path: 'comments', component: () => import('../views/AdminComments.vue') },
       { path: 'categories', component: () => import('../views/AdminCategories.vue') },
       { path: 'tags', component: () => import('../views/AdminTags.vue') },
+      { path: 'related', component: () => import('../views/AdminRelated.vue') },
       { path: 'pages', component: () => import('../views/AdminPages.vue') },
       { path: 'subscriptions', component: () => import('../views/AdminSubscriptions.vue') },
       { path: 'keys', component: () => import('../views/AdminKeys.vue') },

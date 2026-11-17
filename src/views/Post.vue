@@ -42,16 +42,31 @@
           <div class="article-content" v-html="post.html_content" ref="articleContent"></div>
         </article>
 
-        <!-- 右侧导航 -->
-        <nav class="toc-nav" v-if="toc.length > 0">
-          <div class="toc-title">目录</div>
-          <ul class="toc-list">
-            <li v-for="item in toc" :key="item.id"
-                :class="['toc-item', `toc-level-${item.level}`, { active: activeId === item.id }]">
-              <a :href="'#' + item.id" @click.prevent="scrollTo(item.id)">{{ item.text }}</a>
-            </li>
-          </ul>
-        </nav>
+        <!-- 右侧栏：目录 + 相关博客 -->
+        <aside class="post-side" v-if="toc.length > 0 || relatedPosts.length > 0">
+          <nav class="toc-nav" v-if="toc.length > 0">
+            <div class="toc-title">目录</div>
+            <ul class="toc-list">
+              <li v-for="item in toc" :key="item.id"
+                  :class="['toc-item', `toc-level-${item.level}`, { active: activeId === item.id }]">
+                <a :href="'#' + item.id" @click.prevent="scrollTo(item.id)">{{ item.text }}</a>
+              </li>
+            </ul>
+          </nav>
+
+          <!-- 相关博客 -->
+          <div class="related-posts" v-if="relatedPosts.length > 0">
+            <div class="related-title">相关博客</div>
+            <ul class="related-list">
+              <li v-for="item in relatedPosts" :key="item.id" class="related-item">
+                <router-link :to="`/post/${item.slug}`">{{ item.title }}</router-link>
+              </li>
+            </ul>
+            <router-link class="related-all" :to="`/post/${route.params.slug}/related`">
+              查看全部
+            </router-link>
+          </div>
+        </aside>
       </div>
 
       <!-- 评论区域 -->
@@ -107,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import { Edit } from '@element-plus/icons-vue'
@@ -128,6 +143,7 @@ const replyTo = ref(null)
 const articleRef = ref(null)
 const articleContent = ref(null)
 const toc = ref([])
+const relatedPosts = ref([])
 const activeId = ref('')
 const tocLeft = ref(0)
 const isSpeaking = ref(false)
@@ -305,6 +321,7 @@ async function loadPost() {
   try {
     const res = await axios.get(`/api/posts/${route.params.slug}`)
     post.value = res.data
+    loadRelatedPosts()
     // 渲染代码高亮 - 需要等待 v-html 内容渲染完成
     await nextTick()
     setTimeout(() => {
@@ -334,6 +351,32 @@ async function loadPost() {
     loading.value = false
   }
 }
+
+// 相关博客：默认取 5 篇，与"查看全部"页共用同一接口
+async function loadRelatedPosts() {
+  try {
+    const res = await axios.get(`/api/posts/${route.params.slug}/related`, {
+      params: { page: 1, page_size: 5 }
+    })
+    relatedPosts.value = res.data.list || []
+  } catch (e) {
+    console.error('Failed to load related posts', e)
+  }
+}
+
+// 相关博客等入口会在文章之间跳转；路由复用组件时需要重新加载
+watch(() => route.params.slug, (slug) => {
+  if (!slug) return
+  post.value = null
+  comments.value = []
+  relatedPosts.value = []
+  toc.value = []
+  activeId.value = ''
+  loading.value = true
+  window.scrollTo({ top: 0 })
+  loadPost()
+  loadComments()
+})
 
 async function loadComments() {
   try {
@@ -397,20 +440,28 @@ function editPost() {
   max-width: 800px;
 }
 
-/* 右侧目录导航 */
-.toc-nav {
+/* 右侧栏：目录 + 相关博客共用一个 sticky 列 */
+.post-side {
   position: sticky;
   top: 100px;
   align-self: flex-start;
   width: 200px;
-  max-height: 70vh;
+  max-height: calc(100vh - 130px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* 右侧目录导航 */
+.toc-nav {
+  max-height: 45vh;
   overflow-y: auto;
   padding: 15px;
   background: #fff;
   border: 1px solid #e4e7ed;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
 }
 
 .toc-title {
@@ -463,6 +514,66 @@ function editPost() {
 
 .toc-level-3 {
   padding-left: 24px;
+}
+
+/* 相关博客卡片：与目录卡片同风格 */
+.related-posts {
+  max-height: 32vh;
+  overflow-y: auto;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.related-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.related-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.related-item {
+  margin: 4px 0;
+}
+
+.related-item a {
+  display: block;
+  color: #606266;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.related-item a:hover {
+  color: #409eff;
+  background: #f5f7fa;
+}
+
+.related-all {
+  display: block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #409eff;
+  text-decoration: none;
+  text-align: center;
+}
+
+.related-all:hover {
+  color: #66b1ff;
 }
 
 .article-header {
@@ -816,7 +927,7 @@ function editPost() {
     font-size: 18px;
   }
 
-  .toc-nav {
+  .post-side {
     display: none;
   }
 
