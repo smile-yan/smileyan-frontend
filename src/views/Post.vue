@@ -482,7 +482,8 @@ function handleExport(command) {
 }
 
 .article {
-  flex: 0 0 800px;
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 800px;
 }
 
@@ -925,8 +926,8 @@ function handleExport(command) {
   padding: 50px;
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
+/* 移动端/平板适配：隐藏右侧栏，正文独占一行 */
+@media (max-width: 1024px) {
   .post-container {
     flex-direction: column;
   }
