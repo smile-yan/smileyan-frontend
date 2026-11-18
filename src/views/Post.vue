@@ -20,6 +20,26 @@
                 编辑
               </el-button>
               <el-button
+                size="small"
+                :icon="CopyDocument"
+                @click="copyMarkdown"
+                title="复制 Markdown 原文"
+              >
+                复制
+              </el-button>
+              <el-dropdown trigger="click" @command="handleExport">
+                <el-button size="small" :icon="Download" title="导出文章">
+                  导出
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="md">Markdown (.md)</el-dropdown-item>
+                    <el-dropdown-item command="html">HTML (.html)</el-dropdown-item>
+                    <el-dropdown-item command="pdf">PDF (.pdf)</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <el-button
                 :type="isSpeaking ? 'danger' : 'primary'"
                 size="small"
                 @click="toggleSpeak"
@@ -125,12 +145,13 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
-import { Edit } from '@element-plus/icons-vue'
+import { Edit, CopyDocument, Download } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import { initImageViewer as initNativeImageViewer, destroy as destroyNativeViewer } from '@/utils/imageViewer'
 import { initSvgViewer as initNativeSvgViewer, destroySvgViewer as destroyNativeSvgViewer } from '@/utils/svgViewer'
 import { typesetMathJax } from '@/utils/mathjax'
+import { copyText, exportPostAsMarkdown, exportPostAsHtml, printPost } from '@/utils/postExport'
 
 const route = useRoute()
 const router = useRouter()
@@ -418,6 +439,32 @@ function formatDate(date) {
 function editPost() {
   const returnUrl = encodeURIComponent(window.location.pathname)
   router.push(`/admin/editor/${post.value.id}?returnUrl=${returnUrl}`)
+}
+
+// 复制 Markdown 原文到剪贴板
+function copyMarkdown() {
+  if (!post.value?.content) {
+    ElMessage.warning('没有可复制的 Markdown 内容')
+    return
+  }
+  copyText(post.value.content)
+    .then(() => ElMessage.success('Markdown 已复制到剪贴板'))
+    .catch(() => ElMessage.error('复制失败，请尝试手动复制'))
+}
+
+// 导出：Markdown / HTML / PDF
+function handleExport(command) {
+  if (!post.value) return
+  if (command === 'md') {
+    exportPostAsMarkdown(post.value)
+    ElMessage.success('已开始下载 Markdown 文件')
+  } else if (command === 'html') {
+    exportPostAsHtml(post.value)
+    ElMessage.success('已开始下载 HTML 文件')
+  } else if (command === 'pdf') {
+    printPost(post.value)
+    ElMessage.info('请在打印对话框中选择"另存为 PDF"')
+  }
 }
 </script>
 
