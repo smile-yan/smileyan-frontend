@@ -153,6 +153,7 @@ import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
 import { initSvgViewer, destroySvgViewer } from '@/utils/svgViewer'
+import { typesetMathJax } from '@/utils/mathjax'
 
 const router = useRouter()
 const route = useRoute()
@@ -516,8 +517,8 @@ watch([renderedContent, previewMode], async () => {
   renderTimer = setTimeout(async () => {
     await nextTick()
     syncLock = true
-    if (window.MathJax && previewRef.value) {
-      await window.MathJax.typesetPromise([previewRef.value])
+    if (previewRef.value) {
+      await typesetMathJax([previewRef.value])
     }
     if (window.Prism && previewRef.value) {
       window.Prism.highlightAllUnder(previewRef.value)
@@ -559,9 +560,9 @@ async function renderTyporaContent() {
         window.Prism.highlightAllUnder(el)
       })
     }
-    if (window.MathJax && tyDocRef.value) {
+    if (tyDocRef.value) {
       const rendered = [...tyDocRef.value.querySelectorAll('.ty-rendered')]
-      if (rendered.length) await window.MathJax.typesetPromise(rendered)
+      if (rendered.length) await typesetMathJax(rendered)
     }
     if (tyDocRef.value) {
       tyDocRef.value.querySelectorAll('.ty-rendered').forEach(el => {

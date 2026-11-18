@@ -115,6 +115,7 @@ import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import { initImageViewer as initNativeImageViewer, destroy as destroyNativeViewer } from '@/utils/imageViewer'
 import { initSvgViewer as initNativeSvgViewer, destroySvgViewer as destroyNativeSvgViewer } from '@/utils/svgViewer'
+import { typesetMathJax } from '@/utils/mathjax'
 
 const route = useRoute()
 const router = useRouter()
@@ -307,7 +308,7 @@ async function loadPost() {
     post.value = res.data
     // 渲染代码高亮 - 需要等待 v-html 内容渲染完成
     await nextTick()
-    setTimeout(() => {
+    setTimeout(async () => {
       // 先尝试对每个代码块单独处理
       const codeBlocks = document.querySelectorAll('.article-content pre code')
       codeBlocks.forEach((block) => {
@@ -319,10 +320,8 @@ async function loadPost() {
       if (codeBlocks.length === 0 && window.Prism) {
         window.Prism.highlightAll()
       }
-      // 渲染数学公式
-      if (window.MathJax) {
-        window.MathJax.typesetPromise()
-      }
+      // 渲染数学公式：MathJax 脚本 async 加载，可能尚未就绪，等待后再排版
+      await typesetMathJax()
       // 构建目录
       buildToc()
       // 初始化图片查看器

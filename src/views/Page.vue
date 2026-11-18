@@ -19,6 +19,7 @@ import { useRoute } from 'vue-router'
 import axios from '@/utils/axios'
 import { initImageViewer, destroy as destroyViewer } from '@/utils/imageViewer'
 import { initSvgViewer, destroySvgViewer } from '@/utils/svgViewer'
+import { typesetMathJax } from '@/utils/mathjax'
 
 const route = useRoute()
 
@@ -32,7 +33,15 @@ onMounted(async () => {
     page.value = res.data
     // 等待 DOM 更新后初始化图片查看器
     await nextTick()
-    setTimeout(() => {
+    setTimeout(async () => {
+      // 代码高亮
+      document.querySelectorAll('.page-content pre code').forEach((block) => {
+        if (window.Prism) {
+          window.Prism.highlightElement(block)
+        }
+      })
+      // 数学公式
+      await typesetMathJax()
       initImageViewer('.page-content')
       initSvgViewer('.page-content')
     }, 100)

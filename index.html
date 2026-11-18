@@ -16,37 +16,38 @@
       }
     };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <!-- PrismJS Theme - Tomorrow Night -->
-  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <!-- JetBrains Mono（自托管，替换大陆网络不可达的 Google Fonts） -->
+  <link href="/vendor/fonts/jetbrains-mono.css" rel="stylesheet">
+  <!-- MathJax 3（v3.2.2，自托管：jsdelivr 在国内大陆网络不可达，曾导致手机端公式不渲染） -->
+  <script id="MathJax-script" async src="/vendor/mathjax/tex-svg.js"></script>
+  <!-- PrismJS Theme - Tomorrow Night（v1.30.0，自托管） -->
+  <link href="/vendor/prism/prism-tomorrow.min.css" rel="stylesheet" />
   <!-- PrismJS Plugins -->
-  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet" />
+  <link href="/vendor/prism/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
+  <link href="/vendor/prism/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet" />
 </head>
 <body>
   <div id="app"></div>
   <!-- PrismJS Core - 必须在 Vue 应用之前加载 -->
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/prism.min.js"></script>
+  <script src="/vendor/prism/prism.js"></script>
   <!-- PrismJS Languages -->
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-python.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-go.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-java.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-c.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-cpp.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-markup.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-css.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-javascript.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-bash.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-git.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-yaml.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-sql.min.js"></script>
+  <script src="/vendor/prism/components/prism-python.min.js"></script>
+  <script src="/vendor/prism/components/prism-go.min.js"></script>
+  <script src="/vendor/prism/components/prism-java.min.js"></script>
+  <script src="/vendor/prism/components/prism-c.min.js"></script>
+  <script src="/vendor/prism/components/prism-cpp.min.js"></script>
+  <script src="/vendor/prism/components/prism-markup.min.js"></script>
+  <script src="/vendor/prism/components/prism-css.min.js"></script>
+  <script src="/vendor/prism/components/prism-javascript.min.js"></script>
+  <script src="/vendor/prism/components/prism-bash.min.js"></script>
+  <script src="/vendor/prism/components/prism-git.min.js"></script>
+  <script src="/vendor/prism/components/prism-yaml.min.js"></script>
+  <script src="/vendor/prism/components/prism-sql.min.js"></script>
   <!-- PrismJS Plugins -->
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/toolbar/prism-toolbar.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/show-language/prism-show-language.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+  <script src="/vendor/prism/plugins/line-numbers/prism-line-numbers.min.js"></script>
+  <script src="/vendor/prism/plugins/toolbar/prism-toolbar.min.js"></script>
+  <script src="/vendor/prism/plugins/show-language/prism-show-language.min.js"></script>
+  <script src="/vendor/prism/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
   <!-- Vue 应用 -->
   <script type="module" src="/src/main.js"></script>
 </body>
