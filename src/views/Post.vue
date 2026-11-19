@@ -487,23 +487,24 @@ function handleExport(command) {
   max-width: 800px;
 }
 
-/* 右侧栏：目录 + 相关博客共用一个 sticky 列 */
+/* 右侧栏：目录 + 相关博客共用一个 sticky 列
+   固定在视口内，高度撑满视口（上下各留 20px），内容过长时整列内部滚动 */
 .post-side {
   position: sticky;
-  top: 100px;
+  top: 20px;
   align-self: flex-start;
   width: 200px;
-  max-height: calc(100vh - 130px);
+  max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
   gap: 16px;
   flex-shrink: 0;
+  overflow-y: auto;
 }
 
 /* 右侧目录导航 */
 .toc-nav {
-  max-height: 45vh;
-  overflow-y: auto;
+  flex-shrink: 0;
   padding: 15px;
   background: #fff;
   border: 1px solid #e4e7ed;
@@ -565,8 +566,7 @@ function handleExport(command) {
 
 /* 相关博客卡片：与目录卡片同风格 */
 .related-posts {
-  max-height: 32vh;
-  overflow-y: auto;
+  flex-shrink: 0;
   padding: 15px;
   background: #fff;
   border: 1px solid #e4e7ed;

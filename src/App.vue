@@ -252,6 +252,8 @@ a:hover {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* 显式白色背景：避免系统深色模式下画布透明导致正文黑字不可见 */
+  background: #fff;
 }
 
 #app {
@@ -327,7 +329,9 @@ body {
   margin: 0 auto;
   width: 100%;
   padding: 20px;
-  overflow-y: auto;
+  /* 不要在这里建立滚动容器：el-main 高度随内容撑开，自身并不滚动，
+     却会让内部 position: sticky（如文章页右侧目录）失效。让文档统一滚动。 */
+  overflow: visible;
 }
 
 .el-footer {
